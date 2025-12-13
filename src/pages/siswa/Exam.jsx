@@ -26,14 +26,16 @@ const Exam = () => {
     nextQuestion,
     prevQuestion,
     finishExam,
-    formatTime
+    formatTime,
+    clearExam
   } = useExam()
   
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false)
+  const [showConfirmCancel, setShowConfirmCancel] = useState(false)
 
-  // Auto-submit function for when time runs out
+  // Auto-submit function ketika waktu habis
   useEffect(() => {
     window.autoSubmitExam = handleAutoSubmit
     return () => {
@@ -49,14 +51,14 @@ const Exam = () => {
     try {
       setLoading(true)
       
-      // Get package ID from URL
+      // Ambil ID paket dari URL
       const packageId = searchParams.get('paket')
       
-      // Load questions from database
+      // Muat soal dari database
       const { data, error } = await db.getQuestions()
       if (error) throw error
       
-      // Filter questions based on package or use all if no package specified
+      // Filter soal berdasarkan paket atau gunakan semua jika tidak ada paket
       let examQuestions = data || []
       
       // Mock package filtering (in real app, questions would have package_id)
@@ -69,7 +71,7 @@ const Exam = () => {
       } else if (packageId === 'cloze_advanced') {
         examQuestions = examQuestions.filter(q => q.category === 'Cloze').slice(0, 20)
       } else if (packageId === 'comprehensive_test') {
-        // Mix of all categories
+        // Campuran semua category
         const categories = ['Grammar', 'Vocabulary', 'Reading', 'Cloze']
         examQuestions = []
         categories.forEach(cat => {
@@ -77,16 +79,16 @@ const Exam = () => {
           examQuestions.push(...catQuestions)
         })
       } else {
-        // Default: use all available questions up to 50
+        // Default: gunakan semua soal yang tersedia hingga 50
         examQuestions = examQuestions.slice(0, 50)
       }
       
       if (examQuestions.length === 0) {
-        // Mock questions if database is empty
+        // Soal dummy jika database kosong
         examQuestions = generateMockQuestions(packageId)
       }
       
-      // Start exam with questions
+      // Mulai ujian dengan soal
       const duration = getPackageDuration(packageId)
       startExam(examQuestions, duration)
       
@@ -159,7 +161,7 @@ const Exam = () => {
       
       if (!user?.id) throw new Error('User not authenticated')
 
-      // Save to database
+      // Simpan ke database
       const { error } = await db.saveExamResult({
         user_id: user.id, // Use auth user ID directly for RLS
         score_total: examResult.scores.total,
@@ -174,7 +176,7 @@ const Exam = () => {
       
       if (error) throw error
       
-      // Navigate to results page
+      // Navigasi ke halaman hasil
       navigate('/siswa/result', { state: { examResult } })
       
     } catch (error) {
@@ -190,10 +192,15 @@ const Exam = () => {
     await handleAutoSubmit()
   }
 
+  const handleCancelExam = () => {
+    clearExam()
+    navigate('/siswa/dashboard')
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading exam...</div>
+        <div className="text-lg">Memuat ujian...</div>
       </div>
     )
   }
@@ -201,7 +208,7 @@ const Exam = () => {
   if (!currentQuestion) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">No questions available</div>
+        <div className="text-lg">Tidak ada soal tersedia</div>
       </div>
     )
   }
@@ -214,20 +221,31 @@ const Exam = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-semibold text-gray-900">
-                Tryout in Progress
+                Tryout Sedang Berlangsung
               </h1>
               <p className="text-sm text-gray-600">
-                Question {currentQuestionIndex + 1} of {totalQuestions}
+                Soal {currentQuestionIndex + 1} dari {totalQuestions}
               </p>
             </div>
             <div className="flex items-center space-x-4">
               <Timer timeLeft={timeLeft} isActive={isActive} />
-              <Button
-                variant="danger"
-                onClick={() => setShowConfirmSubmit(true)}
-              >
-                Submit Exam
-              </Button>
+              <div className="flex flex-col space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={() => setShowConfirmCancel(true)}
+                >
+                  Batalkan
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                  onClick={() => setShowConfirmSubmit(true)}
+                >
+                  Kumpulkan Jawaban
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -239,7 +257,7 @@ const Exam = () => {
           <div className="lg:col-span-1">
             <div className="card p-4 sticky top-6">
               <h3 className="text-sm font-medium text-gray-900 mb-3">
-                Question Navigation
+                Navigasi Soal
               </h3>
               <div className="grid grid-cols-5 gap-2">
                 {Array.from({ length: totalQuestions }, (_, i) => {
@@ -269,7 +287,7 @@ const Exam = () => {
               
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Answered:</span>
+                  <span className="text-gray-600">Terjawab:</span>
                   <span className="font-medium">
                     {Object.keys(answers).length} / {totalQuestions}
                   </span>
@@ -298,51 +316,90 @@ const Exam = () => {
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Previous
+                Sebelumnya
               </Button>
 
               <div className="text-sm text-gray-600">
-                {Object.keys(answers).length} of {totalQuestions} questions answered
+                {Object.keys(answers).length} dari {totalQuestions} soal terjawab
               </div>
 
-              <Button
-                variant="secondary"
-                onClick={nextQuestion}
-                disabled={currentQuestionIndex === totalQuestions - 1}
-              >
-                Next
-                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Button>
+              {currentQuestionIndex === totalQuestions - 1 ? (
+                <Button
+                  variant="primary"
+                  onClick={() => setShowConfirmSubmit(true)}
+                >
+                  Kumpulkan Jawaban
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  onClick={nextQuestion}
+                >
+                  Selanjutnya
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Submit Confirmation Modal */}
       {showConfirmSubmit && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Submit Exam?
+              Kumpulkan Ujian?
             </h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to submit your exam? You have {formatTime(timeLeft)} remaining.
+              Apakah Anda yakin ingin mengumpulkan ujian? Waktu tersisa {formatTime(timeLeft)} lagi.
             </p>
             <div className="flex justify-end space-x-3">
               <Button
                 variant="outline"
                 onClick={() => setShowConfirmSubmit(false)}
               >
-                Cancel
+                Batal
               </Button>
               <Button
                 variant="danger"
                 onClick={handleSubmitExam}
                 disabled={submitting}
               >
-                {submitting ? 'Submitting...' : 'Submit Exam'}
+                {submitting ? 'Menyimpan...' : 'Kumpulkan Jawaban'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {showConfirmCancel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-medium text-red-600 mb-4">
+              Batalkan Ujian?
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Apakah Anda yakin ingin membatalkan ujian ini? Semua progres jawaban Anda akan hilang dan tidak dapat dikembalikan.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowConfirmCancel(false)}
+              >
+                Kembali Lanjut
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleCancelExam}
+              >
+                Ya, Batalkan
               </Button>
             </div>
           </div>

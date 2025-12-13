@@ -5,15 +5,15 @@
 
 // Default weights for each category (can be adjusted)
 export const DEFAULT_WEIGHTS = {
-  cloze: 0.30,      // 30% - Highest priority as it's often the most challenging
-  grammar: 0.25,    // 25% - Important for language foundation
-  reading: 0.25,    // 25% - Critical for comprehension
-  vocab: 0.20       // 20% - Foundation but easier to improve
+  cloze: 0.30,      // 30% - Prioritas tertinggi karena seringkali paling menantang
+  grammar: 0.25,    // 25% - Penting untuk dasar bahasa
+  reading: 0.25,    // 25% - Kritis untuk pemahaman
+  vocab: 0.20       // 20% - Dasar tapi lebih mudah ditingkatkan
 }
 
 // Priority score thresholds for color coding
 export const PRIORITY_THRESHOLDS = {
-  critical: 0.25,   // Red - Needs immediate attention
+  critical: 0.25,   // Red - Butuh perhatian segera
   high: 0.20,       // Orange - High priority
   medium: 0.15,     // Yellow - Medium priority
   low: 0.10         // Green - Low priority
@@ -26,20 +26,20 @@ export const PRIORITY_THRESHOLDS = {
  * @returns {Array} Sorted array of priority recommendations
  */
 export function calculateSAWPriority(scores, weights = DEFAULT_WEIGHTS) {
-  // Step 1: Convert scores to cost (100 - score) - lower scores = higher priority
+  // Langkah 1: Konversi skor ke biaya (100 - skor) - skor lebih rendah = prioritas lebih tinggi
   const costs = {}
   for (const [category, score] of Object.entries(scores)) {
     costs[category] = 100 - (score || 0)
   }
   
-  // Step 2: Normalize costs (0-1 scale)
-  // Using max possible cost (100) for stability
+  // Langkah 2: Normalisasi biaya (skala 0-1)
+  // Menggunakan biaya maksimal yang mungkin (100) untuk stabilitas
   const normalized = {}
   for (const [category, cost] of Object.entries(costs)) {
     normalized[category] = cost / 100
   }
   
-  // Step 3: Calculate weighted priority scores
+  // Langkah 3: Hitung skor prioritas tertimbang
   const priorities = []
   for (const [category, normCost] of Object.entries(normalized)) {
     const weight = weights[category] || 0
@@ -59,7 +59,7 @@ export function calculateSAWPriority(scores, weights = DEFAULT_WEIGHTS) {
     })
   }
   
-  // Step 4: Sort by priority score (descending - higher score = higher priority)
+  // Langkah 4: Urutkan berdasarkan skor prioritas (menurun - skor lebih tinggi = prioritas lebih tinggi)
   return priorities.sort((a, b) => b.priorityScore - a.priorityScore)
 }
 
@@ -68,10 +68,10 @@ export function calculateSAWPriority(scores, weights = DEFAULT_WEIGHTS) {
  */
 function formatCategoryName(category) {
   const names = {
-    grammar: 'Grammar',
-    vocab: 'Vocabulary',
-    reading: 'Reading Comprehension',
-    cloze: 'Cloze Test'
+    grammar: 'Tata Bahasa',
+    vocab: 'Kosakata',
+    reading: 'Pemahaman Bacaan',
+    cloze: 'Tes Rumpang'
   }
   return names[category] || category
 }
@@ -90,10 +90,10 @@ function getPriorityColor(score) {
  * Get priority label based on score
  */
 function getPriorityLabel(score) {
-  if (score >= PRIORITY_THRESHOLDS.critical) return 'Critical Priority'
-  if (score >= PRIORITY_THRESHOLDS.high) return 'High Priority'
-  if (score >= PRIORITY_THRESHOLDS.medium) return 'Medium Priority'
-  return 'Low Priority'
+  if (score >= PRIORITY_THRESHOLDS.critical) return 'Prioritas Kritis'
+  if (score >= PRIORITY_THRESHOLDS.high) return 'Prioritas Tinggi'
+  if (score >= PRIORITY_THRESHOLDS.medium) return 'Prioritas Sedang'
+  return 'Prioritas Rendah'
 }
 
 /**
@@ -102,29 +102,29 @@ function getPriorityLabel(score) {
 function getRecommendation(category, score) {
   const recommendations = {
     grammar: {
-      low: 'Focus on basic sentence structure and verb tenses',
-      medium: 'Practice complex grammar patterns and conditional sentences',
-      high: 'Review advanced grammar concepts and error correction'
+      low: 'Fokus pada struktur kalimat dasar dan tenses kata kerja',
+      medium: 'Latih pola tata bahasa kompleks dan kalimat pengandaian',
+      high: 'Tinjau konsep tata bahasa lanjutan dan koreksi kesalahan'
     },
     vocab: {
-      low: 'Build foundational vocabulary with daily word learning',
-      medium: 'Expand vocabulary with context-based learning',
-      high: 'Master advanced vocabulary and idiomatic expressions'
+      low: 'Bangun kosakata dasar dengan belajar kata setiap hari',
+      medium: 'Perluas kosakata dengan pembelajaran berbasis konteks',
+      high: 'Kuasai kosakata lanjutan dan ungkapan idiomatis'
     },
     reading: {
-      low: 'Start with short texts and build reading speed',
-      medium: 'Practice with various text types and improve comprehension',
-      high: 'Focus on complex texts and inference skills'
+      low: 'Mulai dengan teks pendek dan tingkatkan kecepatan membaca',
+      medium: 'Latihan dengan berbagai jenis teks dan tingkatkan pemahaman',
+      high: 'Fokus pada teks kompleks dan kemampuan menyimpulkan'
     },
     cloze: {
-      low: 'Practice basic context clues and word patterns',
-      medium: 'Improve understanding of text coherence and flow',
-      high: 'Master advanced cloze techniques and logical reasoning'
+      low: 'Latih petunjuk konteks dasar dan pola kata',
+      medium: 'Tingkatkan pemahaman koherensi dan alur teks',
+      high: 'Kuasai teknik rumpang lanjutan dan penalaran logis'
     }
   }
   
   const level = score < 50 ? 'low' : score < 75 ? 'medium' : 'high'
-  return recommendations[category]?.[level] || 'Continue practicing regularly'
+  return recommendations[category]?.[level] || 'Lanjutkan latihan secara teratur'
 }
 
 /**
@@ -141,9 +141,9 @@ export function calculateCategoryScores(questions, answers) {
     cloze: { correct: 0, total: 0 }
   }
   
-  // Count correct answers by category
+  // Hitung jawaban benar berdasarkan kategori
   questions.forEach(question => {
-    // Normalize category to lowercase to match keys
+    // Normalisasi kategori ke huruf kecil untuk mencocokkan kunci
     const category = question.category.toLowerCase()
     if (categoryStats[category]) {
       categoryStats[category].total++

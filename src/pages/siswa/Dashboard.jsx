@@ -6,7 +6,7 @@ import { db } from '../../lib/supabase'
 
 const Dashboard = () => {
   const navigate = useNavigate()
-  const { profile, isAdmin } = useAuth()
+  const { profile, isAdmin, signOut } = useAuth()
   const { clearExam } = useExam()
   
   const [stats, setStats] = useState({
@@ -17,47 +17,47 @@ const Dashboard = () => {
   const [examHistory, setExamHistory] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Mock exam packages
+  // Data paket ujian (mockup)
   const examPackages = [
     {
       id: 'grammar_basic',
-      name: 'Grammar Basic Test',
-      description: 'Fundamental grammar concepts and sentence structure',
+      name: 'Tes Dasar Tata Bahasa',
+      description: 'Konsep dasar tata bahasa dan struktur kalimat',
       duration: 30,
       questions: 20,
-      category: 'Grammar'
+      category: 'Tata Bahasa'
     },
     {
       id: 'vocabulary_intermediate',
-      name: 'Vocabulary Intermediate',
-      description: 'Intermediate level vocabulary and word usage',
+      name: 'Kosakata Menengah',
+      description: 'Kosakata tingkat menengah dan penggunaan kata',
       duration: 45,
       questions: 30,
-      category: 'Vocabulary'
+      category: 'Kosakata'
     },
     {
       id: 'reading_comprehension',
-      name: 'Reading Comprehension',
-      description: 'Test your reading and understanding skills',
+      name: 'Pemahaman Bacaan',
+      description: 'Uji kemampuan membaca dan pemahaman Anda',
       duration: 60,
       questions: 25,
-      category: 'Reading'
+      category: 'Membaca'
     },
     {
       id: 'cloze_advanced',
-      name: 'Cloze Test Advanced',
-      description: 'Advanced cloze test with complex passages',
+      name: 'Tes Rumpang Lanjutan',
+      description: 'Tes rumpang lanjutan dengan bacaan kompleks',
       duration: 45,
       questions: 20,
-      category: 'Cloze'
+      category: 'Rumpang'
     },
     {
       id: 'comprehensive_test',
-      name: 'Comprehensive Test',
-      description: 'Full test covering all categories',
+      name: 'Tes Komprehensif',
+      description: 'Tes lengkap mencakup semua kategori',
       duration: 90,
       questions: 50,
-      category: 'Mixed'
+      category: 'Campuran'
     }
   ]
 
@@ -67,22 +67,23 @@ const Dashboard = () => {
       return
     }
     
+    // Muat data dashboard
     loadDashboardData()
-    clearExam() // Clear any previous exam state
+    clearExam() // Hapus status ujian sebelumnya
   }, [])
 
   const loadDashboardData = async () => {
     try {
       setLoading(true)
       
-      // Load exam history
+      // Muat riwayat ujian
       const { data, error } = await db.getExamResults(profile?.id)
       if (error) throw error
       
       if (data && data.length > 0) {
-        setExamHistory(data.slice(0, 5)) // Last 5 exams
+        setExamHistory(data.slice(0, 5)) // 5 ujian terakhir
         
-        // Calculate stats
+        // Hitung statistik
         const totalExams = data.length
         const totalScore = data.reduce((sum, exam) => sum + exam.score_total, 0)
         const averageScore = Math.round(totalScore / totalExams)
@@ -116,7 +117,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
+        <div className="text-lg">Memuat...</div>
       </div>
     )
   }
@@ -134,14 +135,23 @@ const Dashboard = () => {
               <p className="text-gray-600 mt-1">Siap belajar hari ini?</p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-500">{profile?.school}</p>
+              <p className="text-sm text-gray-500 mb-2">{profile?.school}</p>
+              <button
+                onClick={() => {
+                  signOut()
+                  navigate('/login')
+                }}
+                className="text-sm text-red-600 hover:text-red-800 font-medium"
+              >
+                Keluar
+              </button>
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
+        {/* Kartu Statistik */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="card">
             <div className="flex items-center">
@@ -202,7 +212,7 @@ const Dashboard = () => {
                     Terakhir Tryout
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {stats.lastExamDate ? formatDate(stats.lastExamDate) : 'Never'}
+                    {stats.lastExamDate ? formatDate(stats.lastExamDate) : 'Belum Pernah'}
                   </dd>
                 </dl>
               </div>
@@ -211,7 +221,7 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Exam Packages */}
+          {/* Paket Ujian */}
           <div className="lg:col-span-2">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Paket Tryout Tersedia
@@ -232,13 +242,13 @@ const Dashboard = () => {
                           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          {pkg.duration} min
+                          {pkg.duration} menit
                         </span>
                         <span className="flex items-center">
                           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
-                          {pkg.questions} questions
+                          {pkg.questions} soal
                         </span>
                         <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
                           {pkg.category}
@@ -259,7 +269,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Recent Exams */}
+          {/* Riwayat Ujian */}
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Riwayat Tryout
@@ -271,7 +281,7 @@ const Dashboard = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          Score: {exam.score_total}/100
+                          Skor: {exam.score_total}/100
                         </p>
                         <p className="text-xs text-gray-500">
                           {formatDate(exam.created_at)}
@@ -284,8 +294,8 @@ const Dashboard = () => {
                           ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {exam.score_total >= 80 ? 'Excellent' : 
-                         exam.score_total >= 60 ? 'Good' : 'Needs Work'}
+                        {exam.score_total >= 80 ? 'Sangat Baik' : 
+                         exam.score_total >= 60 ? 'Baik' : 'Perlu Peningkatan'}
                       </div>
                     </div>
                   </div>

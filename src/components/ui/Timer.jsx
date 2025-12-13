@@ -17,7 +17,7 @@ const Timer = ({ timeLeft, isActive }) => {
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
       <div className="text-center">
         <div className="text-sm font-medium text-gray-500 mb-1">
-          Time Remaining
+          Sisa Waktu
         </div>
         <div className={`text-3xl font-bold ${getTimeColor()}`}>
           {formatTime(timeLeft)}

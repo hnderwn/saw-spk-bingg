@@ -11,14 +11,14 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Initialize auth state
+  // Inisialisasi state otentikasi
   useEffect(() => {
     let mounted = true
     
     const initAuth = async () => {
       console.log('Auth: Initializing...')
       try {
-        // Get current session
+        // Ambil sesi saat ini
         const { data: { session }, error } = await supabase.auth.getSession()
         if (error) throw error
         
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
 
     initAuth()
 
-    // Safety timeout: If auth takes too long (> 5s), force stop loading
+    // Timeout pengaman: Jika auth terlalu lama (> 5dtk), paksa berhenti loading
     const timeout = setTimeout(() => {
       if (loading && mounted) {
         console.warn('Auth: Initialization timeout forced')
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
       }
     }, 5000)
 
-    // Listen for auth changes
+    // Dengarkan perubahan auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth: State change event', event)
@@ -71,12 +71,12 @@ export const AuthProvider = ({ children }) => {
     }
   }, [])
 
-  // Fetch user profile
+  // Ambil profil pengguna
   const fetchProfile = async (userId, retries = 3) => {
     try {
       const { data, error } = await db.getProfile(userId)
       
-      // If no profile found and we have retries left (likely due to Trigger delay), wait and retry
+      // Jika profil tidak ditemukan dan sisa retries ada (kemungkinan delay Trigger), tunggu dan coba lagi
       if (!data && retries > 0) {
         console.log(`Profile not found yet, retrying... (${retries} left)`)
         await new Promise(resolve => setTimeout(resolve, 1000))
@@ -92,7 +92,7 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Sign in function
+  // Fungsi masuk (sign in)
   const signIn = async (email, password) => {
     try {
       setError(null)
@@ -114,13 +114,13 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Sign up function
+  // Fungsi daftar (sign up)
   const signUp = async (email, password, fullName, school, role = 'siswa') => {
     try {
       setError(null)
       setLoading(true)
       
-      // Sign up user with metadata
+      // Daftar pengguna dengan metadata
       const { data: authData, error: authError } = await auth.signUp(email, password, {
         data: {
           full_name: fullName,
@@ -132,14 +132,14 @@ export const AuthProvider = ({ children }) => {
             
       setUser(authData.user)
       if (authData.user) {
-        // Wait a small delay for trigger
+        // Tunggu jeda sebentar untuk trigger
         await new Promise(resolve => setTimeout(resolve, 2000))
         
         let { data: checkProfile } = await db.getProfile(authData.user.id)
         
         if (!checkProfile) {
           console.warn('Trigger based profile creation failed or too slow. Attempting manual creation...')
-          // Fallback: Create profile manually
+          // Fallback: Buat profil secara manual
           const { error: manualProfileError } = await db.createProfile({
             id: authData.user.id,
             full_name: fullName,
@@ -166,7 +166,7 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Sign out function
+  // Fungsi keluar (sign out)
   const signOut = async () => {
     try {
       setLoading(true)
@@ -186,15 +186,15 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Check if user has specific role
+  // Cek apakah pengguna memiliki peran tertentu
   const hasRole = (role) => {
     return profile?.role === role
   }
 
-  // Check if user is admin
+  // Cek apakah pengguna adalah admin
   const isAdmin = () => hasRole('admin')
 
-  // Check if user is student
+  // Cek apakah pengguna adalah siswa
   const isStudent = () => hasRole('siswa')
 
   const value = {

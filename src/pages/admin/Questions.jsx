@@ -22,7 +22,7 @@ const Questions = () => {
 
   useEffect(() => {
     if (!isAdmin()) {
-      // Redirect if not admin
+      // Redirect jika bukan admin
       window.location.href = '/siswa/dashboard'
       return
     }
@@ -48,36 +48,36 @@ const Questions = () => {
     e.preventDefault()
     
     try {
-      // Validate form
+      // Validasi form
       if (!formData.question_text.trim()) {
-        alert('Question text is required')
+        alert('Teks soal wajib diisi')
         return
       }
       
       for (const option of options) {
         if (!formData.options[option]?.trim()) {
-          alert(`Option ${option} is required`)
+          alert(`Pilihan ${option} wajib diisi`)
           return
         }
       }
 
       if (editingQuestion) {
-        // Update existing question
+        // Update soal yang ada
         const { error } = await db.updateQuestion(editingQuestion.id, formData)
         if (error) throw error
       } else {
-        // Create new question
+        // Buat soal baru
         const { error } = await db.createQuestion(formData)
         if (error) throw error
       }
       
-      // Reset form and reload questions
+      // Reset form dan muat ulang soal
       resetForm()
       await loadQuestions()
       
     } catch (error) {
       console.error('Error saving question:', error)
-      alert('Error saving question. Please try again.')
+      alert('Gagal menyimpan soal. Silakan coba lagi.')
     }
   }
 
@@ -93,7 +93,7 @@ const Questions = () => {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this question?')) {
+    if (!confirm('Apakah Anda yakin ingin menghapus soal ini?')) {
       return
     }
     
@@ -104,7 +104,7 @@ const Questions = () => {
       await loadQuestions()
     } catch (error) {
       console.error('Error deleting question:', error)
-      alert('Error deleting question. Please try again.')
+      alert('Gagal menghapus soal. Silakan coba lagi.')
     }
   }
 
@@ -140,7 +140,7 @@ const Questions = () => {
   if (!isAdmin()) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">Access denied. Admin only.</p>
+        <p className="text-gray-600">Akses ditolak. Khusus Admin.</p>
       </div>
     )
   }
@@ -153,17 +153,17 @@ const Questions = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Question Management
+                Manajemen Soal
               </h1>
               <p className="text-gray-600 mt-1">
-                Manage exam questions for all categories
+                Kelola soal ujian untuk semua kategori
               </p>
             </div>
             <Button
               variant="primary"
               onClick={() => setShowForm(true)}
             >
-              Add New Question
+              Tambah Soal Baru
             </Button>
           </div>
         </div>
@@ -194,16 +194,16 @@ const Questions = () => {
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">
-                All Questions ({questions.length})
+                Semua Soal ({questions.length})
               </h2>
               <div className="flex items-center space-x-4">
                 <input
                   type="text"
-                  placeholder="Search questions..."
+                  placeholder="Cari soal..."
                   className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <select className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">All Categories</option>
+                  <option value="">Semua Kategori</option>
                   {categories.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
@@ -213,16 +213,16 @@ const Questions = () => {
 
             {loading ? (
               <div className="text-center py-8">
-                <div className="text-gray-600">Loading questions...</div>
+                <div className="text-gray-600">Memuat soal...</div>
               </div>
             ) : questions.length === 0 ? (
               <div className="text-center py-8">
-                <div className="text-gray-600 mb-2">No questions found</div>
+                <div className="text-gray-600 mb-2">Tidak ada soal ditemukan</div>
                 <Button
                   variant="primary"
                   onClick={() => setShowForm(true)}
                 >
-                  Add First Question
+                  Tambah Soal Pertama
                 </Button>
               </div>
             ) : (
@@ -231,16 +231,16 @@ const Questions = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Question
+                        Soal
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Category
+                        Kategori
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Answer
+                        Jawaban
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Aksi
                       </th>
                     </tr>
                   </thead>
@@ -276,7 +276,7 @@ const Questions = () => {
                               size="sm"
                               onClick={() => handleDelete(question.id)}
                             >
-                              Delete
+                              Hapus
                             </Button>
                           </div>
                         </td>
@@ -296,7 +296,7 @@ const Questions = () => {
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
             <div className="p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {editingQuestion ? 'Edit Question' : 'Add New Question'}
+                {editingQuestion ? 'Edit Soal' : 'Tambah Soal Baru'}
               </h3>
               
               <form onSubmit={handleSubmit}>
@@ -304,7 +304,7 @@ const Questions = () => {
                   {/* Category */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Category
+                      Kategori
                     </label>
                     <select
                       name="category"
@@ -322,7 +322,7 @@ const Questions = () => {
                   {/* Question Text */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Question Text
+                      Teks Soal
                     </label>
                     <textarea
                       name="question_text"
@@ -330,7 +330,7 @@ const Questions = () => {
                       onChange={handleInputChange}
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter the question text..."
+                      placeholder="Masukkan teks soal..."
                       required
                     />
                   </div>
@@ -338,7 +338,7 @@ const Questions = () => {
                   {/* Options */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Answer Options
+                      Pilihan Jawaban
                     </label>
                     <div className="space-y-2">
                       {options.map(option => (
@@ -351,7 +351,7 @@ const Questions = () => {
                             value={formData.options[option] || ''}
                             onChange={(e) => handleOptionChange(option, e.target.value)}
                             className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder={`Option ${option} text...`}
+                            placeholder={`Teks pilihan ${option}...`}
                             required
                           />
                         </div>
@@ -362,7 +362,7 @@ const Questions = () => {
                   {/* Correct Answer */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Correct Answer
+                      Jawaban Benar
                     </label>
                     <select
                       name="correct_answer"
@@ -384,13 +384,13 @@ const Questions = () => {
                     type="button"
                     onClick={resetForm}
                   >
-                    Cancel
+                    Batal
                   </Button>
                   <Button
                     variant="primary"
                     type="submit"
                   >
-                    {editingQuestion ? 'Update' : 'Create'} Question
+                    {editingQuestion ? 'Perbarui' : 'Buat'} Soal
                   </Button>
                 </div>
               </form>

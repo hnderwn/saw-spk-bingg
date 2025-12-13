@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
@@ -13,20 +13,63 @@ const Login = () => {
   })
   
   const navigate = useNavigate()
-  const { signIn, signUp, loading, error, setError } = useAuth()
+  const { user, profile, signIn, signUp, signOut, loading, error, setError } = useAuth()
+
+  // Redirect jika pengguna sudah login
+  useEffect(() => {
+    if (!loading && user && profile) {
+      if (profile.role === 'admin') {
+        navigate('/admin/questions', { replace: true })
+      } else {
+        navigate('/siswa/dashboard', { replace: true })
+      }
+    }
+  }, [user, profile, loading, navigate])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-lg font-medium text-gray-900">Memeriksa sesi...</div>
+          <div className="mt-2 text-sm text-gray-500">Mohon tunggu sebentar</div>
+        </div>
+      </div>
+    )
+  }
+
+  // Jika user ada tapi profil tidak ada (Edge case), tawarkan logout agar tidak terjebak
+  if (user && !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-sm text-center">
+          <h2 className="text-xl font-bold text-red-600 mb-2">Masalah Profil</h2>
+          <p className="text-gray-600 mb-4">
+            Akun Anda terdeteksi ({user.email}), namun data profil tidak ditemukan. 
+            Silakan keluar dan coba masuk kembali, atau hubungi admin.
+          </p>
+          <button
+            onClick={() => signOut()}
+            className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Keluar & Coba Lagi
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     
     if (isSignUp) {
       if (password !== formData.confirmPassword) {
-        alert('Passwords do not match!')
+        alert('Kata sandi tidak cocok!')
         return
       }
       
       const result = await signUp(email, password, formData.fullName, formData.school)
       if (result.success) {
-        // After sign up, redirect based on role
+        // Setelah daftar, alihkan berdasarkan peran
         if (result.role === 'admin') {
           navigate('/admin/questions')
         } else {
@@ -36,11 +79,11 @@ const Login = () => {
     } else {
       const result = await signIn(email, password)
       if (result.success) {
-        // After login, redirect based on role
+        // Setelah masuk, alihkan berdasarkan peran
         if (result.role === 'admin') {
           navigate('/admin/questions')
         } else {
-          // Check if there is a pending redirect (e.g. from ProtectedRoute)
+          // Cek jika ada redirect tertunda (misal dari ProtectedRoute)
           const from = location.state?.from?.pathname || '/siswa/dashboard'
           navigate(from, { replace: true })
         }
@@ -61,10 +104,10 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {isSignUp ? 'Create your account' : 'Sign in to your account'}
+            {isSignUp ? 'Buat akun baru' : 'Masuk ke akun Anda'}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Tryout & Learning Recommendation System
+            Sistem Rekomendasi Belajar & Tryout
           </p>
         </div>
         
@@ -72,7 +115,7 @@ const Login = () => {
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email" className="sr-only">
-                Email address
+                Alamat Email
               </label>
               <input
                 id="email"
@@ -81,7 +124,7 @@ const Login = () => {
                 autoComplete="email"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
+                placeholder="Alamat Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -89,7 +132,7 @@ const Login = () => {
             
             <div>
               <label htmlFor="password" className="sr-only">
-                Password
+                Kata Sandi
               </label>
               <input
                 id="password"
@@ -98,7 +141,7 @@ const Login = () => {
                 autoComplete="current-password"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
+                placeholder="Kata Sandi"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -109,7 +152,7 @@ const Login = () => {
             <div className="space-y-4">
               <div>
                 <label htmlFor="fullName" className="sr-only">
-                  Full Name
+                  Nama Lengkap
                 </label>
                 <input
                   id="fullName"
@@ -118,7 +161,7 @@ const Login = () => {
                   autoComplete="name"
                   required
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  placeholder="Full Name"
+                  placeholder="Nama Lengkap"
                   value={formData.fullName}
                   onChange={handleInputChange}
                 />
@@ -126,7 +169,7 @@ const Login = () => {
               
               <div>
                 <label htmlFor="school" className="sr-only">
-                  School
+                  Asal Sekolah
                 </label>
                 <input
                   id="school"
@@ -134,7 +177,7 @@ const Login = () => {
                   type="text"
                   required
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  placeholder="School Name"
+                  placeholder="Nama Sekolah"
                   value={formData.school}
                   onChange={handleInputChange}
                 />
@@ -142,7 +185,7 @@ const Login = () => {
               
               <div>
                 <label htmlFor="confirmPassword" className="sr-only">
-                  Confirm Password
+                  Konfirmasi Kata Sandi
                 </label>
                 <input
                   id="confirmPassword"
@@ -151,7 +194,7 @@ const Login = () => {
                   autoComplete="new-password"
                   required
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  placeholder="Confirm Password"
+                  placeholder="Konfirmasi Kata Sandi"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                 />
@@ -171,7 +214,7 @@ const Login = () => {
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Processing...' : (isSignUp ? 'Sign up' : 'Sign in')}
+              {loading ? 'Memproses...' : (isSignUp ? 'Daftar' : 'Masuk')}
             </button>
           </div>
 
@@ -185,8 +228,8 @@ const Login = () => {
               }}
             >
               {isSignUp 
-                ? 'Already have an account? Sign in' 
-                : "Don't have an account? Sign up"
+                ? 'Sudah punya akun? Masuk' 
+                : "Belum punya akun? Daftar"
               }
             </button>
           </div>

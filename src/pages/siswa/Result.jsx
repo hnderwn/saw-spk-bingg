@@ -18,24 +18,25 @@ const Result = () => {
     const init = async () => {
       try {
         if (location.state?.examResult) {
+          // Menggunakan hasil dari state
           console.log('Using result from state:', location.state.examResult)
           setExamResult(location.state.examResult)
           const recommendations = calculateSAWPriority(location.state.examResult.scores)
           setSawRecommendations(recommendations)
           setLoading(false)
         } else {
-          // Load latest exam result if no state
+          // Muat hasil ujian terakhir jika tidak ada state
           console.log('No state, loading latest result for user:', user?.id)
           await loadLatestResult()
         }
       } catch (error) {
         console.error('Error in Result initialization:', error)
-        setLoading(false) // Stop loading on error
+        setLoading(false) // Hentikan loading saat error
       }
     }
     
     init()
-  }, [user]) // Re-run if user matches
+  }, [user]) // Jalankan ulang jika user cocok
 
   const loadLatestResult = async () => {
     try {
@@ -48,13 +49,13 @@ const Result = () => {
       if (data && data.length > 0) {
         const latest = data[0]
         
-        // Transform DB format to app format if needed
+        // Ubah format DB ke format aplikasi jika diperlukan
         const result = {
           id: latest.id,
-          startTime: latest.created_at, // Approx
+          startTime: latest.created_at, // Perkiraan
           endTime: latest.created_at,
-          duration: 0, // Not stored in standard way in DB yet or lost
-          questions: 0, // Unknown from just result row unless we count answsers
+          duration: 0, // Belum disimpan dengan cara standar di DB atau hilang
+          questions: 0, // Tidak diketahui dari baris hasil saja kecuali kita hitung jawaban
           answered: Object.keys(latest.answers || {}).length,
           scores: {
              total: latest.score_total,
@@ -63,7 +64,7 @@ const Result = () => {
           answers: latest.answers
         }
         
-        // If strict SAW calculation needs perfect structure, ensure defaults
+        // Jika perhitungan SAW ketat memerlukan struktur sempurna, pastikan default
         if (!result.scores.total) result.scores.total = 0
 
         setExamResult(result)
@@ -88,21 +89,21 @@ const Result = () => {
   }
 
   const getScoreLabel = (score) => {
-    if (score >= 80) return 'Excellent'
-    if (score >= 60) return 'Good'
-    return 'Needs Improvement'
+    if (score >= 80) return 'Sangat Baik'
+    if (score >= 60) return 'Baik'
+    return 'Perlu Peningkatan'
   }
 
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
-    return `${mins}m ${secs}s`
+    return `${mins}m ${secs}d`
   }
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading results...</div>
+        <div className="text-lg">Memuat hasil...</div>
       </div>
     )
   }
@@ -111,9 +112,9 @@ const Result = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">No exam result found</p>
+          <p className="text-gray-600 mb-4">Tidak ada hasil ujian ditemukan</p>
           <Button onClick={() => navigate('/siswa/dashboard')}>
-            Back to Dashboard
+            Kembali ke Dashboard
           </Button>
         </div>
       </div>
@@ -128,15 +129,15 @@ const Result = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Exam Results
+                Hasil Ujian
               </h1>
               <p className="text-gray-600 mt-1">
-                Great job, {profile?.full_name}! Here's your performance analysis.
+                Kerja bagus, {profile?.full_name}! Berikut analisis performa Anda.
               </p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">
-                Completed: {new Date(examResult.endTime).toLocaleString()}
+                Selesai: {new Date(examResult.endTime).toLocaleString('id-ID')}
               </p>
             </div>
           </div>
@@ -148,7 +149,7 @@ const Result = () => {
         <div className="mb-8">
           <Card className="p-8 text-center">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Your Total Score
+              Skor Total Anda
             </h2>
             <div className="mb-4">
               <span className={`text-6xl font-bold ${getScoreColor(examResult.scores.total)}`}>
@@ -157,9 +158,9 @@ const Result = () => {
               <span className="text-2xl text-gray-500">/100</span>
             </div>
             <div className="flex items-center justify-center space-x-4 text-sm text-gray-600">
-              <span>Duration: {formatDuration(examResult.duration)}</span>
+              <span>Durasi: {formatDuration(examResult.duration)}</span>
               <span>•</span>
-              <span>Questions: {examResult.answered}/{examResult.questions}</span>
+              <span>Soal: {examResult.answered}/{examResult.questions}</span>
               <span>•</span>
               <span className={`font-medium ${getScoreColor(examResult.scores.total)}`}>
                 {getScoreLabel(examResult.scores.total)}
@@ -172,7 +173,7 @@ const Result = () => {
           {/* Category Breakdown */}
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Score by Category
+              Skor per Kategori
             </h2>
             <div className="space-y-4">
               {Object.entries(examResult.scores)
@@ -182,7 +183,10 @@ const Result = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-medium text-gray-900 capitalize">
-                          {category === 'vocab' ? 'Vocabulary' : category}
+                          {category === 'vocab' ? 'Kosakata' : 
+                           category === 'grammar' ? 'Tata Bahasa' :
+                           category === 'reading' ? 'Membaca' :
+                           category === 'cloze' ? 'Rumpang' : category}
                         </h3>
                         <p className="text-sm text-gray-600">
                           {getScoreLabel(score)}
@@ -215,7 +219,7 @@ const Result = () => {
           {/* SAW Recommendations */}
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Learning Priority Recommendations
+              Rekomendasi Prioritas Belajar
             </h2>
             <div className="space-y-4">
               {sawRecommendations.map((rec, index) => (
@@ -239,23 +243,23 @@ const Result = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-sm text-gray-600">
-                        Score: {rec.rawScore}/100
+                        Skor: {rec.rawScore}/100
                       </div>
                       <div className="text-xs text-gray-500">
-                        Priority: {(rec.priorityScore * 100).toFixed(1)}%
+                        Prioritas: {(rec.priorityScore * 100).toFixed(1)}%
                       </div>
                     </div>
                   </div>
                   
                   <div className="bg-gray-50 rounded-lg p-3">
                     <p className="text-sm text-gray-700">
-                      <strong>Recommendation:</strong> {rec.recommendation}
+                      <strong>Rekomendasi:</strong> {rec.recommendation}
                     </p>
                   </div>
                   
                   <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-                    <span>Cost: {rec.cost}/100</span>
-                    <span>Weight: {(rec.weight * 100).toFixed(0)}%</span>
+                    <span>Biaya: {rec.cost}/100</span>
+                    <span>Bobot: {(rec.weight * 100).toFixed(0)}%</span>
                   </div>
                 </Card>
               ))}
@@ -269,12 +273,12 @@ const Result = () => {
             variant="primary"
             onClick={() => navigate('/siswa/dashboard')}
           >
-            Back to Dashboard
+            Kembali ke Dashboard
           </Button>
           <Button
             variant="outline"
             onClick={() => {
-              // Start a new exam focusing on the weakest area
+              // Mulai ujian baru yang berfokus pada area terlemah
               const weakestCategory = sawRecommendations[0]?.categoryKey
               if (weakestCategory) {
                 navigate(`/siswa/exam?paket=${weakestCategory}_practice`)
@@ -283,7 +287,7 @@ const Result = () => {
               }
             }}
           >
-            Practice Weakest Area
+            Latihan Area Lemah
           </Button>
         </div>
 
@@ -291,17 +295,17 @@ const Result = () => {
         <div className="mt-8">
           <Card className="p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-3">
-              How are recommendations calculated?
+              Bagaimana rekomendasi dihitung?
             </h3>
             <div className="text-sm text-gray-600 space-y-2">
               <p>
-                Our system uses the SAW (Simple Additive Weighting) method to calculate learning priorities:
+                Sistem kami menggunakan metode SAW (Simple Additive Weighting) untuk menghitung prioritas belajar:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Lower scores get higher priority for improvement</li>
-                <li>Each category has different weights based on importance</li>
-                <li>Cloze Test (30%), Grammar (25%), Reading (25%), Vocabulary (20%)</li>
-                <li>The system recommends focusing on your weakest areas first</li>
+                <li>Skor lebih rendah mendapatkan prioritas lebih tinggi untuk perbaikan</li>
+                <li>Setiap kategori memiliki bobot berbeda berdasarkan tingkat kepentingan</li>
+                <li>Tes Rumpang (30%), Tata Bahasa (25%), Membaca (25%), Kosakata (20%)</li>
+                <li>Sistem menyarankan untuk fokus pada area terlemah Anda terlebih dahulu</li>
               </ul>
             </div>
           </Card>

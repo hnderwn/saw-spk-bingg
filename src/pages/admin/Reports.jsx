@@ -12,7 +12,7 @@ const Reports = () => {
 
   useEffect(() => {
     if (!isAdmin()) {
-      // Redirect if not admin
+      // Redirect jika bukan admin
       window.location.href = '/siswa/dashboard'
       return
     }
@@ -78,7 +78,7 @@ const Reports = () => {
   if (!isAdmin()) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">Access denied. Admin only.</p>
+        <p className="text-gray-600">Akses ditolak. Khusus Admin.</p>
       </div>
     )
   }
@@ -91,17 +91,17 @@ const Reports = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Exam Reports
+                Laporan Ujian
               </h1>
               <p className="text-gray-600 mt-1">
-                Overview of student exam performance
+                Ringkasan performa ujian siswa
               </p>
             </div>
             <Button
               variant="outline"
               onClick={() => loadReports()}
             >
-              Refresh
+              Segarkan
             </Button>
           </div>
         </div>
@@ -117,7 +117,7 @@ const Reports = () => {
                   {stats.totalExams}
                 </div>
                 <div className="text-sm text-gray-600 mt-1">
-                  Total Exams
+                  Total Ujian
                 </div>
               </div>
             </Card>
@@ -128,7 +128,7 @@ const Reports = () => {
                   {stats.totalStudents}
                 </div>
                 <div className="text-sm text-gray-600 mt-1">
-                  Active Students
+                  Siswa Aktif
                 </div>
               </div>
             </Card>
@@ -139,7 +139,7 @@ const Reports = () => {
                   {stats.averageScore}
                 </div>
                 <div className="text-sm text-gray-600 mt-1">
-                  Average Score
+                  Rata-rata Skor
                 </div>
               </div>
             </Card>
@@ -150,7 +150,7 @@ const Reports = () => {
                   {Math.round((stats.averageScore / 100) * 5 * 10) / 10}
                 </div>
                 <div className="text-sm text-gray-600 mt-1">
-                  Average Grade
+                  Nilai Rata-rata
                 </div>
               </div>
             </Card>
@@ -161,14 +161,17 @@ const Reports = () => {
         {stats && (
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Category Performance
+              Performa Kategori
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {Object.entries(stats.categoryAverages).map(([category, score]) => (
                 <Card key={category} className="p-4">
                   <div className="text-center">
                     <div className="text-sm font-medium text-gray-600 capitalize mb-2">
-                      {category === 'vocab' ? 'Vocabulary' : category}
+                      {category === 'vocab' ? 'Kosakata' : 
+                       category === 'grammar' ? 'Tata Bahasa' :
+                       category === 'reading' ? 'Membaca' :
+                       category === 'cloze' ? 'Rumpang' : category}
                     </div>
                     <div className={`text-2xl font-bold ${getScoreColor(score)}`}>
                       {score}
@@ -194,18 +197,18 @@ const Reports = () => {
         {/* Recent Results */}
         <div>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Recent Exam Results
+            Hasil Ujian Terbaru
           </h2>
           
           {loading ? (
             <Card className="p-8 text-center">
-              <div className="text-gray-600">Loading results...</div>
+              <div className="text-gray-600">Memuat hasil...</div>
             </Card>
           ) : results.length === 0 ? (
             <Card className="p-8 text-center">
-              <div className="text-gray-600 mb-2">No exam results found</div>
+              <div className="text-gray-600 mb-2">Tidak ada hasil ujian ditemukan</div>
               <div className="text-sm text-gray-500">
-                Students haven't taken any exams yet.
+                Siswa belum mengambil ujian apapun.
               </div>
             </Card>
           ) : (
@@ -215,31 +218,31 @@ const Reports = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Student
+                        Siswa
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        School
+                        Sekolah
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Score
+                        Skor Total
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Grammar
+                        Tata Bahasa
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Vocabulary
+                        Kosakata
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Reading
+                        Membaca
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Cloze
+                        Rumpang
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
+                        Tanggal
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Aksi
                       </th>
                     </tr>
                   </thead>
@@ -290,7 +293,7 @@ const Reports = () => {
                             size="sm"
                             onClick={() => setSelectedResult(result)}
                           >
-                            View Details
+                            Lihat Detail
                           </Button>
                         </td>
                       </tr>
@@ -310,37 +313,37 @@ const Reports = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">
-                  Exam Details
+                  Detail Ujian
                 </h3>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setSelectedResult(null)}
                 >
-                  Close
+                  Tutup
                 </Button>
               </div>
               
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">
-                    Student Information
+                    Informasi Siswa
                   </h4>
                   <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Name:</span>
+                      <span className="text-gray-600">Nama:</span>
                       <span className="font-medium">
                         {selectedResult.profiles?.full_name || 'Unknown'}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">School:</span>
+                      <span className="text-gray-600">Sekolah:</span>
                       <span className="font-medium">
                         {selectedResult.profiles?.school || 'Unknown'}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Date:</span>
+                      <span className="text-gray-600">Tanggal:</span>
                       <span className="font-medium">
                         {formatDate(selectedResult.created_at)}
                       </span>
@@ -350,7 +353,7 @@ const Reports = () => {
 
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">
-                    Score Breakdown
+                    Rincian Skor
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-gray-50 rounded-lg p-4">
@@ -358,7 +361,7 @@ const Reports = () => {
                         <div className={`text-2xl font-bold ${getScoreColor(selectedResult.score_total)}`}>
                           {selectedResult.score_total}
                         </div>
-                        <div className="text-sm text-gray-600">Total Score</div>
+                        <div className="text-sm text-gray-600">Skor Total</div>
                       </div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-4">
@@ -366,7 +369,7 @@ const Reports = () => {
                         <div className={`text-2xl font-bold ${getScoreColor(selectedResult.score_grammar)}`}>
                           {selectedResult.score_grammar}
                         </div>
-                        <div className="text-sm text-gray-600">Grammar</div>
+                        <div className="text-sm text-gray-600">Tata Bahasa</div>
                       </div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-4">
@@ -374,7 +377,7 @@ const Reports = () => {
                         <div className={`text-2xl font-bold ${getScoreColor(selectedResult.score_vocab)}`}>
                           {selectedResult.score_vocab}
                         </div>
-                        <div className="text-sm text-gray-600">Vocabulary</div>
+                        <div className="text-sm text-gray-600">Kosakata</div>
                       </div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-4">
@@ -382,7 +385,7 @@ const Reports = () => {
                         <div className={`text-2xl font-bold ${getScoreColor(selectedResult.score_reading)}`}>
                           {selectedResult.score_reading}
                         </div>
-                        <div className="text-sm text-gray-600">Reading</div>
+                        <div className="text-sm text-gray-600">Membaca</div>
                       </div>
                     </div>
                   </div>

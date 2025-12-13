@@ -10,15 +10,25 @@ const QuestionCard = ({
 }) => {
   const options = ['A', 'B', 'C', 'D', 'E']
   
+  const getCategoryLabel = (cat) => {
+    const map = {
+      'Grammar': 'Tata Bahasa',
+      'Vocabulary': 'Kosakata',
+      'Reading': 'Membaca',
+      'Cloze': 'Rumpang'
+    }
+    return map[cat] || cat
+  }
+
   return (
     <Card className="p-6">
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-gray-500">
-            Question {questionNumber} of {totalQuestions}
+            Soal {questionNumber} dari {totalQuestions}
           </span>
           <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-            {question.category}
+            {getCategoryLabel(question.category)}
           </span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
