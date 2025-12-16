@@ -54,6 +54,9 @@ const Exam = () => {
       // Ambil ID paket dari URL
       const packageId = searchParams.get('paket')
       
+      // Reset state ujian sebelumnya jika ada
+      clearExam()
+
       // Muat soal dari database
       const { data, error } = await db.getQuestions()
       if (error) throw error
@@ -78,6 +81,13 @@ const Exam = () => {
           const catQuestions = data.filter(q => q.category === cat).slice(0, 12)
           examQuestions.push(...catQuestions)
         })
+      } else if (packageId === 'practice') {
+        // Latihan Area Lemah: Ambil soal berdasarkan kategori spesifik
+        const targetCategory = searchParams.get('category')
+        if (targetCategory) {
+          // Filter hanya kategori target, ambil 15 soal
+          examQuestions = examQuestions.filter(q => q.category === targetCategory).slice(0, 15)
+        }
       } else {
         // Default: gunakan semua soal yang tersedia hingga 50
         examQuestions = examQuestions.slice(0, 50)
@@ -85,7 +95,7 @@ const Exam = () => {
       
       if (examQuestions.length === 0) {
         // Soal dummy jika database kosong
-        examQuestions = generateMockQuestions(packageId)
+        examQuestions = generateMockQuestions(packageId, searchParams.get('category'))
       }
       
       // Mulai ujian dengan soal
@@ -105,19 +115,21 @@ const Exam = () => {
       vocabulary_intermediate: 2700, // 45 minutes
       reading_comprehension: 3600, // 60 minutes
       cloze_advanced: 2700, // 45 minutes
-      comprehensive_test: 5400 // 90 minutes
+      comprehensive_test: 5400, // 90 minutes
+      practice: 900 // 15 minutes
     }
     return durations[packageId] || 3600 // Default 60 minutes
   }
 
-  const generateMockQuestions = (packageId) => {
+  const generateMockQuestions = (packageId, targetCategory) => {
     const mockQuestions = []
     const categories = {
       grammar_basic: ['Grammar'],
       vocabulary_intermediate: ['Vocabulary'],
       reading_comprehension: ['Reading'],
       cloze_advanced: ['Cloze'],
-      comprehensive_test: ['Grammar', 'Vocabulary', 'Reading', 'Cloze']
+      comprehensive_test: ['Grammar', 'Vocabulary', 'Reading', 'Cloze'],
+      practice: [targetCategory || 'Grammar']
     }
     
     const selectedCategories = categories[packageId] || ['Grammar']
@@ -161,9 +173,14 @@ const Exam = () => {
       
       if (!user?.id) throw new Error('User not authenticated')
 
+      // Tentukan tipe ujian berdasarkan paket
+      const packageId = searchParams.get('paket')
+      const examType = packageId === 'practice' ? 'practice' : 'tryout'
+
       // Simpan ke database
-      const { error } = await db.saveExamResult({
+      const dbPayload = {
         user_id: user.id, // Use auth user ID directly for RLS
+        exam_type: examType,
         score_total: examResult.scores.total,
         category_scores: {
           grammar: examResult.scores.grammar || 0,
@@ -171,8 +188,12 @@ const Exam = () => {
           reading: examResult.scores.reading || 0,
           cloze: examResult.scores.cloze || 0
         },
-        answers: examResult.answers
-      })
+        answers: examResult.answers // Supabase handles JSONB conversion automatically
+      }
+      
+      console.log('Submitting Exam Payload:', dbPayload)
+
+      const { error } = await db.saveExamResult(dbPayload)
       
       if (error) throw error
       
