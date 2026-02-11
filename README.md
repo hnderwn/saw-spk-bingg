@@ -5,6 +5,7 @@ A comprehensive React-based application for exam simulation and personalized lea
 ## Features
 
 ### For Students (Siswa)
+
 - 🔐 **Authentication**: Secure login and registration
 - 📊 **Dashboard**: View exam statistics and history
 - 📝 **Tryout System**: Timed exams with multiple categories
@@ -12,11 +13,13 @@ A comprehensive React-based application for exam simulation and personalized lea
 - 📈 **Performance Tracking**: Detailed score breakdowns
 
 ### For Admins
+
 - 🎛️ **Question Management**: CRUD operations for exam questions
 - 📊 **Reports Dashboard**: Comprehensive exam result analytics
 - 👥 **Student Monitoring**: Track student performance
 
 ### Technical Features
+
 - ⚡ **React + Vite**: Fast development and build times
 - 🎨 **Tailwind CSS**: Modern, responsive UI
 - 🔗 **Supabase**: Backend as a Service (Auth + Database)
@@ -54,6 +57,7 @@ src/
 ## Installation & Setup
 
 ### Prerequisites
+
 - Node.js 16+ and npm/yarn
 - Supabase account (free tier works)
 
@@ -134,8 +138,8 @@ CREATE POLICY "Questions are viewable by everyone" ON questions
 CREATE POLICY "Only admins can modify questions" ON questions
   FOR ALL USING (
     EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
       AND profiles.role = 'admin'
     )
   );
@@ -146,8 +150,8 @@ CREATE POLICY "Users can view their own results" ON exam_results
 CREATE POLICY "Admins can view all results" ON exam_results
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
       AND profiles.role = 'admin'
     )
   );
@@ -177,55 +181,86 @@ The app will be available at `http://localhost:5173`
 ## Usage
 
 ### For Students
+
 1. **Register**: Create a new account with your email and details
 2. **Dashboard**: View your exam history and statistics
 3. **Take Exams**: Choose from available exam packages
 4. **View Results**: Get detailed score breakdowns and SAW recommendations
 
 ### For Admins
+
 1. **Login**: Use an admin account (role must be set to 'admin' in profiles)
 2. **Manage Questions**: Add, edit, or delete exam questions
 3. **View Reports**: Monitor student performance and exam statistics
 
-## SAW Algorithm
-
-The system uses the Simple Additive Weighting method to calculate learning priorities:
-
-### Weights Configuration
-- **Cloze Test**: 30% (highest priority - most challenging)
-- **Grammar**: 25% (language foundation)
-- **Reading**: 25% (comprehension skills)
-- **Vocabulary**: 20% (foundational but easier to improve)
-
-### Calculation Process
-1. **Cost Calculation**: `cost = 100 - score`
-2. **Normalization**: `normalized = cost / 100`
-3. **Priority Score**: `priority = normalized × weight`
-4. **Ranking**: Sort by priority score (descending)
-
 The algorithm recommends focusing on areas with the highest priority scores first.
 
-## Exam Categories
+## Weighted Scoring Logic
 
-- **Grammar**: Sentence structure, verb tenses, parts of speech
-- **Vocabulary**: Word meanings, synonyms, context usage
-- **Reading**: Comprehension, inference, main ideas
-- **Cloze**: Context clues, logical reasoning, coherence
+Sistem menggunakan metode **Persentase Poin Terbobot (Weighted Percentage)**. Skor akhir tidak hanya dihitung dari jumlah jawaban benar, tetapi berdasarkan bobot poin dari setiap soal yang dijawab.
+
+### Rumus Perhitungan
+
+```
+Skor = (Total Poin yang Diraih / Total Poin Maksimal Paket) × 100
+```
+
+### Parameter Soal
+
+| Parameter      | Nilai | Deskripsi                                                                         |
+| :------------- | :---: | :-------------------------------------------------------------------------------- |
+| **Difficulty** | 1 - 3 | Menentukan level CEFR (A1-C2). Berpengaruh pada status SAW (Fondasi vs Lanjutan). |
+| **Weight**     | 1 - 3 | Menentukan jumlah poin per soal. Soal sulit memberikan poin lebih besar.          |
+
+---
+
+## Exam Packages
+
+Paket soal dibagi menjadi dua kategori utama untuk membantu siswa mengukur kemahiran dan melakukan latihan terfokus.
+
+### 1. Kategori: Ujian (Diagnostic & Proficiency)
+
+Digunakan untuk menentukan atau memperbarui profil level CEFR dan status SAW secara formal.
+
+| Nama Paket                    | Soal | Waktu  | Isi Konten                                   |
+| :---------------------------- | :--: | :----: | :------------------------------------------- |
+| **Kickstart Diagnostic**      |  50  | 60 mnt | Campuran semua kategori & tingkat kesulitan. |
+| **Basic Mastery (A1-A2)**     |  30  | 40 mnt | Fokus pada penguasaan materi dasar.          |
+| **Intermediate Path (B1-B2)** |  30  | 45 mnt | Fokus pada pemahaman konteks menengah.       |
+| **Advanced Pro (C1-C2)**      |  30  | 50 mnt | Tantangan tingkat tinggi & akademik.         |
+
+### 2. Kategori: Latihan (Daily & Focused)
+
+Digunakan untuk mengasah kemampuan secara cepat atau memperbaiki area terlemah.
+
+| Nama Paket            | Soal | Waktu  | Fokus Utama                                       |
+| :-------------------- | :--: | :----: | :------------------------------------------------ |
+| **Daily Speed-Check** |  15  | 20 mnt | Latihan campuran versi lite (cepat).              |
+| **Smart Practice**    |  15  | 15 mnt | Automatis ditarik dari area terlemah (Hasil SAW). |
+| **Grammar Master**    |  20  | 25 mnt | Fokus 100% pada struktur & tata bahasa.           |
+| **Vocab Power**       |  20  | 25 mnt | Fokus 100% pada kosakata & makna kata.            |
+| **Reading Pro**       |  15  | 30 mnt | Fokus 100% pada pemahaman bacaan.                 |
+| **Cloze Challenge**   |  20  | 25 mnt | Fokus 100% pada teks rumpang.                     |
+
+---
 
 ## Development
 
 ### Adding New Features
+
 1. Create components in `src/components/`
 2. Add pages in `src/pages/`
 3. Update routing in `src/App.jsx`
 4. Use existing contexts for state management
 
 ### Styling
+
 - Use Tailwind CSS classes
 - Follow the existing component patterns
 - Maintain responsive design principles
 
 ### Database Operations
+
 - Use the `db` object from `lib/supabase.js`
 - All database calls include proper error handling
 - Row Level Security is enabled for security
@@ -233,17 +268,21 @@ The algorithm recommends focusing on areas with the highest priority scores firs
 ## Deployment
 
 ### Build for Production
+
 ```bash
 npm run build
 ```
 
 ### Deploy to Static Hosting
+
 1. Build the project
 2. Upload `dist/` folder to your hosting provider
 3. Configure environment variables
 
 ### Environment Variables for Production
+
 Make sure to set the same environment variables in your production environment:
+
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 
@@ -262,6 +301,7 @@ This project is licensed under the MIT License.
 ## Support
 
 For issues and questions:
+
 1. Check the documentation
 2. Search existing issues
 3. Create a new issue with detailed information
@@ -269,6 +309,7 @@ For issues and questions:
 ---
 
 **Note**: This is a demonstration project. For production use, consider:
+
 - Adding more robust error handling
 - Implementing comprehensive testing
 - Adding analytics and monitoring
