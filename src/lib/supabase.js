@@ -73,4 +73,22 @@ export const db = {
   getAuditLogs: () => supabase.from('audit_logs').select(`*, profiles(full_name)`).order('created_at', { ascending: false }).limit(100),
 
   createAuditLog: (log) => supabase.from('audit_logs').insert(log),
+
+  // Learning Materials
+  getLearningMaterials: (category = null, lastSync = null) => {
+    let query = supabase.from('learning_materials').select('*');
+    if (category && category !== 'All') {
+      query = query.eq('category', category);
+    }
+    if (lastSync) {
+      query = query.gt('updated_at', lastSync);
+    }
+    return query.order('term', { ascending: true });
+  },
+
+  createLearningMaterial: (material) => supabase.from('learning_materials').insert(material),
+
+  updateLearningMaterial: (id, updates) => supabase.from('learning_materials').update(updates).eq('id', id),
+
+  deleteLearningMaterial: (id) => supabase.from('learning_materials').delete().eq('id', id),
 };

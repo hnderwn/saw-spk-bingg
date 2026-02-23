@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/siswa/Dashboard';
 import Exam from './pages/siswa/Exam';
 import Result from './pages/siswa/Result';
+import Dictionary from './pages/siswa/Dictionary';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Questions from './pages/admin/Questions';
 import Reports from './pages/admin/Reports';
@@ -12,6 +13,7 @@ import Users from './pages/admin/Users';
 import Packages from './pages/admin/Packages';
 import ResultsCenter from './pages/admin/Results';
 import AuditLogs from './pages/admin/AuditLogs';
+import AdminLearning from './pages/admin/Learning';
 import AdminLayout from './components/layout/AdminLayout';
 
 // Protected Route Component
@@ -62,6 +64,7 @@ function App() {
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="exam" element={<Exam />} />
                     <Route path="result" element={<Result />} />
+                    <Route path="dictionary" element={<Dictionary />} />
                     <Route path="*" element={<Navigate to="/siswa/dashboard" replace />} />
                   </Routes>
                 </ProtectedRoute>
@@ -81,6 +84,7 @@ function App() {
                       <Route path="users" element={<Users />} />
                       <Route path="results" element={<ResultsCenter />} />
                       <Route path="reports" element={<Reports />} />
+                      <Route path="learning" element={<AdminLearning />} />
                       <Route path="audit-logs" element={<AuditLogs />} />
                       <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
                     </Routes>

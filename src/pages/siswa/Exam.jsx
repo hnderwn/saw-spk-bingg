@@ -3,10 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useExam } from '../../context/ExamContext';
 import { db } from '../../lib/supabase';
-import { calculateCategoryScores } from '../../lib/saw';
+// Import UI components dipertahankan
 import QuestionCard from '../../components/Exam/QuestionCard';
 import Timer from '../../components/ui/Timer';
 import Button from '../../components/ui/Button';
+
+// ── Reusable dividers (Sesuai dengan tema) ──
+const RedRule = ({ opacity = 1 }) => <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,#BF0A30 25%,#BF0A30 75%,transparent)', opacity }} />;
+const GoldRule = ({ opacity = 1 }) => <div style={{ height: 1, background: 'linear-gradient(90deg,transparent,#C8B99A 30%,#C8B99A 70%,transparent)', opacity }} />;
 
 const Exam = () => {
   const navigate = useNavigate();
@@ -34,23 +38,15 @@ const Exam = () => {
   const loadExamQuestions = async () => {
     try {
       setLoading(true);
-
-      // Ambil ID paket dari URL
       const packageId = searchParams.get('paket');
-
-      // Reset state ujian sebelumnya jika ada
       clearExam();
 
-      // Muat soal dari database
       const { data, error } = await db.getQuestions();
       if (error) throw error;
 
-      // Filter soal berdasarkan paket
       let examQuestions = data || [];
 
-      // Filter logic based on new package names
       if (packageId === 'kickstart_diagnostic') {
-        // Full mixed difficulty
         examQuestions = examQuestions.slice(0, 50);
       } else if (packageId === 'grammar_master') {
         examQuestions = examQuestions.filter((q) => q.category === 'Grammar').slice(0, 20);
@@ -63,18 +59,15 @@ const Exam = () => {
       } else if (packageId === 'daily_speed_check') {
         examQuestions = examQuestions.slice(0, 15);
       } else if (packageId === 'basic_mastery') {
-        // 80% L1, 20% L2
         const l1 = examQuestions.filter((q) => q.difficulty === 1).slice(0, 24);
         const l2 = examQuestions.filter((q) => q.difficulty === 2).slice(0, 6);
         examQuestions = [...l1, ...l2];
       } else if (packageId === 'intermediate_path') {
-        // 20% L1, 60% L2, 20% L3
         const l1 = examQuestions.filter((q) => q.difficulty === 1).slice(0, 6);
         const l2 = examQuestions.filter((q) => q.difficulty === 2).slice(0, 18);
         const l3 = examQuestions.filter((q) => q.difficulty === 3).slice(0, 6);
         examQuestions = [...l1, ...l2, ...l3];
       } else if (packageId === 'advanced_pro') {
-        // 20% L2, 80% L3
         const l2 = examQuestions.filter((q) => q.difficulty === 2).slice(0, 6);
         const l3 = examQuestions.filter((q) => q.difficulty === 3).slice(0, 24);
         examQuestions = [...l2, ...l3];
@@ -102,16 +95,16 @@ const Exam = () => {
 
   const getPackageDuration = (packageId) => {
     const durations = {
-      kickstart_diagnostic: 3600, // 60 mins
-      grammar_master: 1500, // 25 mins
-      vocab_power: 1500, // 25 mins
-      reading_pro: 1800, // 30 mins
-      cloze_challenge: 1500, // 25 mins
-      daily_speed_check: 1200, // 20 mins
-      basic_mastery: 2400, // 40 mins
-      intermediate_path: 2700, // 45 mins
-      advanced_pro: 3000, // 50 mins
-      practice: 900, // 15 mins
+      kickstart_diagnostic: 3600,
+      grammar_master: 1500,
+      vocab_power: 1500,
+      reading_pro: 1800,
+      cloze_challenge: 1500,
+      daily_speed_check: 1200,
+      basic_mastery: 2400,
+      intermediate_path: 2700,
+      advanced_pro: 3000,
+      practice: 900,
     };
     return durations[packageId] || 3600;
   };
@@ -145,7 +138,6 @@ const Exam = () => {
         weight: (i % 3) + 1,
       });
     }
-
     return mockQuestions;
   };
 
@@ -163,17 +155,13 @@ const Exam = () => {
     setSubmitting(true);
     try {
       const examResult = finishExam();
-      console.log('Submitting exam result for user:', user?.id);
-
       if (!user?.id) throw new Error('User not authenticated');
 
-      // Tentukan tipe ujian berdasarkan paket
       const packageId = searchParams.get('paket');
       const examType = packageId === 'practice' ? 'practice' : 'tryout';
 
-      // Simpan ke database
       const dbPayload = {
-        user_id: user.id, // Use auth user ID directly for RLS
+        user_id: user.id,
         exam_type: examType,
         score_total: examResult.scores.total,
         category_scores: {
@@ -182,16 +170,12 @@ const Exam = () => {
           reading: examResult.scores.reading || 0,
           cloze: examResult.scores.cloze || 0,
         },
-        answers: examResult.answers, // Supabase handles JSONB conversion automatically
+        answers: examResult.answers,
       };
 
-      console.log('Submitting Exam Payload:', dbPayload);
-
       const { error } = await db.saveExamResult(dbPayload);
-
       if (error) throw error;
 
-      // Navigasi ke halaman hasil
       navigate('/siswa/result', { state: { examResult } });
     } catch (error) {
       console.error('Error submitting exam:', error);
@@ -213,154 +197,216 @@ const Exam = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Memuat ujian...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F2ECD8' }}>
+        <p className="text-xl italic" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+          Memuat naskah ujian...
+        </p>
       </div>
     );
   }
 
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Tidak ada soal tersedia</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F2ECD8' }}>
+        <p className="text-xl italic" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+          Tidak ada soal tersedia untuk paket ini.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
+    <div className="min-h-screen font-['DM_Sans']" style={{ backgroundColor: '#F2ECD8' }}>
+      {/* ── Sticky Header (UX Improvement) ── */}
+      <div className="sticky top-0 z-40 shadow-md" style={{ backgroundColor: '#FAF6EC', borderBottom: '1px solid #C8B99A' }}>
+        <RedRule />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Tryout Sedang Berlangsung</h1>
-              <p className="text-sm text-gray-600">
+              <h1 className="text-2xl font-bold leading-none" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+                Naskah Ujian Resmi
+              </h1>
+              <p className="text-xs italic mt-1" style={{ fontFamily: "'IM Fell English',serif", color: '#6B5A42' }}>
                 Soal {currentQuestionIndex + 1} dari {totalQuestions}
               </p>
             </div>
-            <div className="flex items-center space-x-4">
-              <Timer timeLeft={timeLeft} isActive={isActive} />
-              <div className="flex flex-col space-y-2">
-                <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => setShowConfirmCancel(true)}>
-                  Batalkan
-                </Button>
 
-                <Button variant="outline" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={() => setShowConfirmSubmit(true)}>
-                  Kumpulkan Jawaban
-                </Button>
+            <div className="flex items-center space-x-4 md:space-x-6">
+              {/* Timer UI (assuming it handles its own styles, but we wrap it carefully) */}
+              <div className="font-bold text-lg" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#BF0A30' }}>
+                <Timer timeLeft={timeLeft} isActive={isActive} />
+              </div>
+
+              <div className="flex items-center space-x-3">
+                {/* Hierarki UX: Tombol Batal dibuat lebih "subtle" */}
+                <button onClick={() => setShowConfirmCancel(true)} className="text-xs font-bold uppercase tracking-wider transition-colors hover:underline" style={{ color: '#6B5A42' }}>
+                  Batalkan
+                </button>
+
+                <button
+                  onClick={() => setShowConfirmSubmit(true)}
+                  className="px-4 py-2 text-xs font-bold text-white rounded-sm shadow-sm transition-all hover:-translate-y-px"
+                  style={{ backgroundColor: '#1A4FAD', border: '1px solid #0A2463' }}
+                >
+                  Kumpulkan
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* ── Main Content Area ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Question Navigation */}
-          <div className="lg:col-span-1">
-            <div className="card p-4 sticky top-6">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Navigasi Soal</h3>
-              <div className="grid grid-cols-5 gap-2">
-                {Array.from({ length: totalQuestions }, (_, i) => {
-                  const questionId = questions[i]?.id;
-                  const isAnswered = answers[questionId] !== undefined;
-                  const isCurrent = i === currentQuestionIndex;
+        <div className="flex flex-col lg:grid lg:grid-cols-4 gap-6">
+          {/* ══ AREA SOAL (Diurutkan pertama di Mobile) ══ */}
+          <div className="order-1 lg:col-span-3">
+            {/* Wrapper Card Klasik untuk Komponen QuestionCard */}
+            <div className="rounded-sm p-6 md:p-8" style={{ backgroundColor: '#FAF6EC', border: '1px solid #C8B99A', boxShadow: '0 4px 16px rgba(10,36,99,0.05)' }}>
+              <QuestionCard question={currentQuestion} questionNumber={currentQuestionIndex + 1} totalQuestions={totalQuestions} selectedAnswer={answers[currentQuestion.id]} onAnswerSelect={handleAnswerSelect} />
 
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => handleQuestionClick(i)}
-                      className={`
-                        w-8 h-8 rounded text-xs font-medium transition-colors
-                        ${isCurrent ? 'bg-blue-600 text-white' : isAnswered ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
-                      `}
-                    >
-                      {i + 1}
-                    </button>
-                  );
-                })}
+              <div className="mt-8 mb-4">
+                <GoldRule opacity={0.5} />
               </div>
 
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Terjawab:</span>
-                  <span className="font-medium">
-                    {Object.keys(answers).length} / {totalQuestions}
-                  </span>
+              {/* Navigation Buttons Bawah */}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={prevQuestion}
+                  disabled={currentQuestionIndex === 0}
+                  className="px-4 py-2 flex items-center text-sm font-bold rounded-sm transition-all disabled:opacity-40"
+                  style={{ backgroundColor: '#EDE4CC', border: '1px solid #C8B99A', color: '#0A2463' }}
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Sebelumnya
+                </button>
+
+                <div className="hidden md:block text-xs font-mono" style={{ color: '#6B5A42' }}>
+                  {Object.keys(answers).length} / {totalQuestions} Terjawab
+                </div>
+
+                {currentQuestionIndex === totalQuestions - 1 ? (
+                  <button
+                    onClick={() => setShowConfirmSubmit(true)}
+                    className="px-4 py-2 flex items-center text-sm font-bold rounded-sm text-white transition-all hover:bg-[#2460C8]"
+                    style={{ backgroundColor: '#1A4FAD', border: '1px solid #0A2463' }}
+                  >
+                    Selesai
+                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+                ) : (
+                  <button onClick={nextQuestion} className="px-4 py-2 flex items-center text-sm font-bold rounded-sm transition-all hover:bg-[#E5D7B3]" style={{ backgroundColor: '#EDE4CC', border: '1px solid #C8B99A', color: '#0A2463' }}>
+                    Selanjutnya
+                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ══ NAVIGASI SOAL (Diurutkan kedua di Mobile, Sticky di Desktop) ══ */}
+          <div className="order-2 lg:col-span-1">
+            <div className="rounded-sm sticky top-28" style={{ backgroundColor: '#FAF6EC', border: '1px solid #C8B99A', boxShadow: '0 4px 16px rgba(10,36,99,0.05)' }}>
+              <RedRule opacity={0.6} />
+              <div className="p-4 md:p-5">
+                <h3 className="text-sm font-bold mb-3 uppercase tracking-widest" style={{ color: '#0A2463' }}>
+                  Indeks Soal
+                </h3>
+                <GoldRule opacity={0.6} />
+
+                {/* Solusi Mobile UX: max-h-60 overflow-y-auto */}
+                <div className="mt-4 grid grid-cols-5 gap-2 max-h-60 lg:max-h-[calc(100vh-16rem)] overflow-y-auto pr-1">
+                  {Array.from({ length: totalQuestions }, (_, i) => {
+                    const questionId = questions[i]?.id;
+                    const isAnswered = answers[questionId] !== undefined;
+                    const isCurrent = i === currentQuestionIndex;
+
+                    // Classic Button Styles Logic
+                    let btnStyle = { border: '1px solid #C8B99A', color: '#6B5A42', backgroundColor: 'transparent' };
+                    if (isCurrent) {
+                      btnStyle = { border: '1px solid #0A2463', color: '#fff', backgroundColor: '#0A2463' }; // Navy for active
+                    } else if (isAnswered) {
+                      btnStyle = { border: '1px solid #1A4FAD', color: '#1A4FAD', backgroundColor: '#EDE4CC' }; // Highlighted for answered
+                    }
+
+                    return (
+                      <button key={i} onClick={() => handleQuestionClick(i)} className="w-full aspect-square rounded-sm text-xs font-bold font-mono transition-all hover:opacity-80 flex items-center justify-center" style={btnStyle}>
+                        {i + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-5 pt-4" style={{ borderTop: '1px solid rgba(200,185,154,0.4)' }}>
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span style={{ color: '#6B5A42' }}>Terjawab:</span>
+                    <span className="font-bold text-sm" style={{ color: '#0A2463' }}>
+                      {Object.keys(answers).length} / {totalQuestions}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            <QuestionCard question={currentQuestion} questionNumber={currentQuestionIndex + 1} totalQuestions={totalQuestions} selectedAnswer={answers[currentQuestion.id]} onAnswerSelect={handleAnswerSelect} />
-
-            {/* Navigation Buttons */}
-            <div className="flex items-center justify-between mt-6">
-              <Button variant="secondary" onClick={prevQuestion} disabled={currentQuestionIndex === 0}>
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Sebelumnya
-              </Button>
-
-              <div className="text-sm text-gray-600">
-                {Object.keys(answers).length} dari {totalQuestions} soal terjawab
-              </div>
-
-              {currentQuestionIndex === totalQuestions - 1 ? (
-                <Button variant="primary" onClick={() => setShowConfirmSubmit(true)}>
-                  Kumpulkan Jawaban
-                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </Button>
-              ) : (
-                <Button variant="secondary" onClick={nextQuestion}>
-                  Selanjutnya
-                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Button>
-              )}
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Submit Confirmation Modal */}
+      {/* ════ MODAL KONFIRMASI KUMPULKAN ════ */}
       {showConfirmSubmit && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Kumpulkan Ujian?</h3>
-            <p className="text-gray-600 mb-6">Apakah Anda yakin ingin mengumpulkan ujian? Waktu tersisa {formatTime(timeLeft)} lagi.</p>
-            <div className="flex justify-end space-x-3">
-              <Button variant="outline" onClick={() => setShowConfirmSubmit(false)}>
-                Batal
-              </Button>
-              <Button variant="danger" onClick={handleSubmitExam} disabled={submitting}>
-                {submitting ? 'Menyimpan...' : 'Kumpulkan Jawaban'}
-              </Button>
+        <div className="fixed inset-0 bg-[#0A2463]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
+          <div className="bg-[#FAF6EC] rounded-sm max-w-md w-full border border-[#C8B99A] overflow-hidden shadow-2xl">
+            <RedRule />
+            <div className="p-6 md:p-8">
+              <h3 className="text-2xl font-bold mb-3" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+                Kumpulkan Ujian?
+              </h3>
+              <p className="text-sm italic mb-6" style={{ fontFamily: "'IM Fell English',serif", color: '#6B5A42' }}>
+                Apakah Anda yakin ingin mengumpulkan ujian? Waktu tersisa <b style={{ color: '#BF0A30' }}>{formatTime(timeLeft)}</b> lagi.
+              </p>
+              <div className="flex justify-end space-x-3 pt-4 border-t" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
+                <button onClick={() => setShowConfirmSubmit(false)} className="px-4 py-2 text-xs font-bold rounded-sm uppercase tracking-wider transition-colors" style={{ color: '#6B5A42', border: '1px solid #C8B99A' }}>
+                  Batal
+                </button>
+                <button
+                  onClick={handleSubmitExam}
+                  disabled={submitting}
+                  className="px-5 py-2 text-xs font-bold text-white rounded-sm uppercase tracking-wider transition-colors"
+                  style={{ backgroundColor: '#1A4FAD', opacity: submitting ? 0.7 : 1 }}
+                >
+                  {submitting ? 'Menyimpan...' : 'Ya, Kumpulkan'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Cancel Confirmation Modal */}
+      {/* ════ MODAL KONFIRMASI BATALKAN ════ */}
       {showConfirmCancel && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-medium text-red-600 mb-4">Batalkan Ujian?</h3>
-            <p className="text-gray-600 mb-6">Apakah Anda yakin ingin membatalkan ujian ini? Semua progres jawaban Anda akan hilang dan tidak dapat dikembalikan.</p>
-            <div className="flex justify-end space-x-3">
-              <Button variant="outline" onClick={() => setShowConfirmCancel(false)}>
-                Kembali Lanjut
-              </Button>
-              <Button variant="danger" onClick={handleCancelExam}>
-                Ya, Batalkan
-              </Button>
+        <div className="fixed inset-0 bg-[#0A2463]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
+          <div className="bg-[#FAF6EC] rounded-sm max-w-md w-full border border-[#BF0A30] overflow-hidden shadow-2xl">
+            <RedRule />
+            <div className="p-6 md:p-8">
+              <h3 className="text-2xl font-bold mb-3" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#BF0A30' }}>
+                Batalkan Ujian?
+              </h3>
+              <p className="text-sm italic mb-6" style={{ fontFamily: "'IM Fell English',serif", color: '#6B5A42' }}>
+                Apakah Anda yakin ingin membatalkan ujian ini? Semua progres jawaban Anda akan hilang dan tidak dapat dikembalikan.
+              </p>
+              <div className="flex justify-end space-x-3 pt-4 border-t" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
+                <button onClick={() => setShowConfirmCancel(false)} className="px-4 py-2 text-xs font-bold rounded-sm uppercase tracking-wider transition-colors" style={{ color: '#0A2463', border: '1px solid #C8B99A' }}>
+                  Kembali Lanjut
+                </button>
+                <button onClick={handleCancelExam} className="px-5 py-2 text-xs font-bold text-white rounded-sm uppercase tracking-wider transition-colors" style={{ backgroundColor: '#BF0A30' }}>
+                  Ya, Batalkan
+                </button>
+              </div>
             </div>
           </div>
         </div>

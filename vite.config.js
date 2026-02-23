@@ -10,10 +10,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Tryout & Learning Recommendation System',
-        short_name: 'TryoutSAW',
+        name: 'Scholara - Tryout & Learning',
+        short_name: 'Scholara',
         description: 'Exam simulation and personalized learning recommendations using SAW method',
-        theme_color: '#3b82f6',
+        theme_color: '#0A2463',
         icons: [
           {
             src: 'pwa-192x192.png',

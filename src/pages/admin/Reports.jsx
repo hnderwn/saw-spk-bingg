@@ -4,6 +4,10 @@ import { db } from '../../lib/supabase';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 
+// ── Reusable dividers ──
+const RedRule = ({ opacity = 1 }) => <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,#BF0A30 25%,#BF0A30 75%,transparent)', opacity }} />;
+const GoldRule = ({ opacity = 1 }) => <div style={{ height: 1, background: 'linear-gradient(90deg,transparent,#C8B99A 30%,#C8B99A 70%,transparent)', opacity }} />;
+
 const Reports = () => {
   const { isAdmin } = useAuth();
   const [questions, setQuestions] = useState([]);
@@ -13,11 +17,9 @@ const Reports = () => {
 
   useEffect(() => {
     if (!isAdmin()) {
-      // Redirect jika bukan admin
       window.location.href = '/siswa/dashboard';
       return;
     }
-
     loadData();
   }, []);
 
@@ -57,7 +59,6 @@ const Reports = () => {
   const calculateStats = () => {
     if (results.length === 0 || questions.length === 0) return null;
 
-    // Student-Centric Results: Ambil hanya hasil TERBARU untuk tiap siswa
     const latestResultsPerStudent = Object.values(
       results.reduce((acc, current) => {
         if (!acc[current.user_id] || new Date(current.created_at) > new Date(acc[current.user_id].created_at)) {
@@ -77,7 +78,6 @@ const Reports = () => {
       Cloze: Math.round(results.reduce((sum, r) => sum + (r.category_scores?.cloze?.score || 0), 0) / results.length),
     };
 
-    // CEFR Distribution Calculation (Based on Latest Student Ability)
     const cefrDist = { A1: 0, A2: 0, B1: 0, B2: 0, C1: 0, C2: 0 };
     latestResultsPerStudent.forEach((r) => {
       const s = r.score_total;
@@ -89,7 +89,6 @@ const Reports = () => {
       else cefrDist['A1']++;
     });
 
-    // Topic Analysis (Hardest Topics)
     const topicStats = {};
     results.forEach((r) => {
       if (!r.answers) return;
@@ -111,7 +110,7 @@ const Reports = () => {
         errorRate: Math.round((1 - stats.correct / stats.total) * 100),
       }))
       .sort((a, b) => b.errorRate - a.errorRate)
-      .slice(0, 5); // Top 5 hardest
+      .slice(0, 5);
 
     return {
       totalExams: results.length,
@@ -128,10 +127,8 @@ const Reports = () => {
   const downloadCSV = () => {
     if (results.length === 0) return;
 
-    // Header CSV
     const headers = ['Nama Siswa', 'Sekolah', 'Skor Total', 'Grammar', 'Vocab', 'Reading', 'Cloze', 'Tanggal'];
 
-    // Data rows
     const rows = results.map((r) => [
       r.profiles?.full_name || 'Anonymous',
       r.profiles?.school || '-',
@@ -143,10 +140,8 @@ const Reports = () => {
       new Date(r.created_at).toLocaleDateString(),
     ]);
 
-    // Gabungkan
     const csvContent = [headers, ...rows].map((e) => e.join(',')).join('\n');
 
-    // Download trigger
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -159,123 +154,154 @@ const Reports = () => {
 
   if (!isAdmin()) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">Akses ditolak. Khusus Admin.</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F2ECD8' }}>
+        <p className="text-lg italic" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+          Akses ditolak. Khusus Admin.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Laporan Analitik</h1>
-              <p className="text-gray-600 mt-1">Ringkasan performa ujian siswa</p>
-            </div>
-            <div className="flex space-x-3">
-              <Button variant="outline" onClick={() => downloadCSV()}>
-                Ekspor CSV
-              </Button>
-              <Button variant="primary" onClick={() => loadData()}>
-                Segarkan
-              </Button>
-            </div>
+    <div className="min-h-screen p-4 md:p-6 lg:p-8 space-y-8" style={{ backgroundColor: '#F2ECD8', fontFamily: "'DM Sans',sans-serif" }}>
+      {/* ── Header ── */}
+      <div>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-3">
+          <div>
+            <h1 className="font-bold text-2xl leading-none" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+              Laporan Analitik
+            </h1>
+            <p className="text-sm italic mt-1" style={{ fontFamily: "'IM Fell English',serif", color: '#6B5A42' }}>
+              Ringkasan komprehensif performa ujian siswa
+            </p>
+          </div>
+          <div className="flex space-x-3">
+            <Button variant="outline" onClick={() => downloadCSV()}>
+              Ekspor CSV
+            </Button>
+            <Button variant="primary" onClick={() => loadData()}>
+              Segarkan Data
+            </Button>
           </div>
         </div>
+        <GoldRule opacity={0.6} />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Statistics */}
+      {/* ── Main Content ── */}
+      <div className="space-y-8">
+        {/* ══ STATS ══ */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="p-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900">{stats.totalExams}</div>
-                <div className="text-sm text-gray-600 mt-1">Total Ujian</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+            {[
+              { label: 'Total Ujian', value: stats.totalExams, icon: '📋', accent: '#1A4FAD' },
+              { label: 'Total Siswa Unik', value: stats.totalStudents, icon: '👥', accent: '#16A34A' },
+              { label: 'Rata-rata Skor', value: stats.averageScore, icon: '🎯', accent: '#D97706', colorClass: getScoreColor(stats.averageScore) },
+              { label: 'Nilai Rata-rata', value: Math.round((stats.averageScore / 100) * 5 * 10) / 10, icon: '⭐', accent: '#7C3AED' },
+            ].map(({ label, value, icon, accent, colorClass }) => (
+              <div
+                key={label}
+                className="rounded-sm p-5 flex flex-col gap-3 transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(10,36,99,0.1)] cursor-default"
+                style={{ background: '#FAF6EC', border: '1px solid #C8B99A', borderLeft: `4px solid ${accent}` }}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42' }}>
+                    {label}
+                  </p>
+                  <span className="text-lg">{icon}</span>
+                </div>
+                <p className={`font-bold leading-none ${colorClass || ''}`} style={{ fontFamily: "'Cormorant Garamond',serif", color: colorClass ? undefined : '#0A2463', fontSize: 32 }}>
+                  {value}
+                </p>
               </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900">{stats.totalStudents}</div>
-                <div className="text-sm text-gray-600 mt-1">Total Siswa Unik</div>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="text-center">
-                <div className={`text-3xl font-bold ${getScoreColor(stats.averageScore)}`}>{stats.averageScore}</div>
-                <div className="text-sm text-gray-600 mt-1">Rata-rata Skor</div>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900">{Math.round((stats.averageScore / 100) * 5 * 10) / 10}</div>
-                <div className="text-sm text-gray-600 mt-1">Nilai Rata-rata</div>
-              </div>
-            </Card>
+            ))}
           </div>
         )}
 
-        {/* Analytics Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* ══ ANALYTICS GRID ══ */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* CEFR Distribution */}
-          <Card className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-              <span className="mr-2">📊</span> Distribusi Level CEFR
-            </h2>
-            <div className="space-y-4">
+          <div className="rounded-sm p-6" style={{ background: '#FAF6EC', border: '1px solid #C8B99A' }}>
+            <div className="flex items-center gap-2 mb-2">
+              <span>📊</span>
+              <h2 className="font-bold text-lg" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+                Distribusi Level CEFR
+              </h2>
+            </div>
+            <GoldRule opacity={0.6} />
+
+            <div className="space-y-4 mt-5">
               {stats &&
                 Object.entries(stats.cefrDist).map(([level, count]) => {
                   const percentage = stats.totalExams > 0 ? (count / stats.totalExams) * 100 : 0;
                   return (
                     <div key={level}>
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="font-bold text-gray-700">{level}</span>
-                        <span className="text-gray-500">
+                        <span className="font-bold" style={{ color: '#0A2463' }}>
+                          {level}
+                        </span>
+                        <span className="text-xs font-mono" style={{ color: '#6B5A42' }}>
                           {count} Siswa ({Math.round(percentage)}%)
                         </span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-3">
-                        <div className={`h-3 rounded-full transition-all duration-500 ${level.startsWith('C') ? 'bg-purple-500' : level.startsWith('B') ? 'bg-blue-500' : 'bg-green-500'}`} style={{ width: `${percentage}%` }}></div>
+                      <div className="w-full rounded-full h-2" style={{ background: '#EDE4CC' }}>
+                        <div
+                          className={`h-2 rounded-full transition-all duration-500`}
+                          style={{
+                            width: `${percentage}%`,
+                            background: level.startsWith('C') ? '#7C3AED' : level.startsWith('B') ? '#1A4FAD' : '#16A34A',
+                          }}
+                        ></div>
                       </div>
                     </div>
                   );
                 })}
             </div>
-            <p className="mt-6 text-xs text-gray-500 italic">*Penentuan level berdasarkan skor total rata-rata ujian diagnostic & proficiency.</p>
-          </Card>
+            <p className="mt-6 text-[11px] italic" style={{ fontFamily: "'IM Fell English',serif", color: '#6B5A42' }}>
+              * Penentuan level berdasarkan skor total rata-rata ujian diagnostic & proficiency.
+            </p>
+          </div>
 
           {/* Hardest Topics */}
-          <Card className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-              <span className="mr-2">🧨</span> Rekap Topik Tersulit
-            </h2>
-            <div className="overflow-hidden rounded-lg border border-gray-100">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+          <div className="rounded-sm p-6" style={{ background: '#FAF6EC', border: '1px solid #C8B99A' }}>
+            <div className="flex items-center gap-2 mb-2">
+              <span>🧨</span>
+              <h2 className="font-bold text-lg" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+                Rekap Topik Tersulit
+              </h2>
+            </div>
+            <GoldRule opacity={0.6} />
+
+            <div className="mt-5 overflow-hidden rounded-sm" style={{ border: '1px solid #C8B99A' }}>
+              {/* PENAMBAHAN AKSEN MERAH DI SINI */}
+              <RedRule opacity={0.6} />
+              <table className="min-w-full divide-y" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
+                <thead style={{ background: '#EDE4CC' }}>
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Topik Materi</th>
-                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Error Rate</th>
+                    <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42' }}>
+                      Topik Materi
+                    </th>
+                    <th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42' }}>
+                      Error Rate
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
                   {stats && stats.hardestTopics.length > 0 ? (
                     stats.hardestTopics.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-red-50 transition-colors">
-                        <td className="px-4 py-3 text-sm text-gray-900 font-medium">{item.topic}</td>
+                      <tr key={idx} className="transition-colors hover:bg-[#EDE4CC]/50">
+                        <td className="px-4 py-3 text-sm font-medium" style={{ color: '#0A2463' }}>
+                          {item.topic}
+                        </td>
                         <td className="px-4 py-3 text-right">
-                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${item.errorRate > 70 ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>{item.errorRate}% Salah</span>
+                          <span className="px-2 py-1 rounded-sm text-xs font-bold" style={{ background: item.errorRate > 70 ? 'rgba(191,10,48,0.1)' : 'rgba(217,119,6,0.1)', color: item.errorRate > 70 ? '#BF0A30' : '#D97706' }}>
+                            {item.errorRate}% Salah
+                          </span>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="2" className="px-4 py-8 text-center text-sm text-gray-500">
+                      <td colSpan="2" className="px-4 py-8 text-center text-sm italic" style={{ fontFamily: "'IM Fell English',serif", color: '#6B5A42' }}>
                         Belum ada data materi yang tersisa.
                       </td>
                     </tr>
@@ -283,115 +309,147 @@ const Reports = () => {
                 </tbody>
               </table>
             </div>
-            <p className="mt-6 text-xs text-gray-500 italic">*Topik dengan tingkat kesalahan tertinggi dari seluruh jawaban siswa.</p>
-          </Card>
+            <p className="mt-6 text-[11px] italic" style={{ fontFamily: "'IM Fell English',serif", color: '#6B5A42' }}>
+              * Topik dengan tingkat kesalahan tertinggi dari seluruh jawaban siswa.
+            </p>
+          </div>
         </div>
 
-        {/* Category Performance & Stock Check */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          <div className="lg:col-span-2">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <span className="mr-2">📈</span> Rata-rata Skor Kategori
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* ══ CATEGORY & STOCK ══ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 rounded-sm p-6" style={{ background: '#FAF6EC', border: '1px solid #C8B99A' }}>
+            <div className="flex items-center gap-2 mb-2">
+              <span>📈</span>
+              <h2 className="font-bold text-lg" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+                Rata-rata Skor Kategori
+              </h2>
+            </div>
+            <GoldRule opacity={0.6} />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
               {stats &&
                 Object.entries(stats.categoryAverages).map(([category, score]) => (
-                  <Card key={category} className="p-4 border-l-4 border-blue-500">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{category}</p>
-                        <p className={`text-2xl font-black ${getScoreColor(score)}`}>{score}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="w-16 h-16 rounded-full border-4 border-gray-100 flex items-center justify-center relative">
-                          <span className="text-xs font-bold text-gray-400">{score}%</span>
-                          <svg className="absolute inset-0 w-full h-full -rotate-90">
-                            <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" strokeWidth="4" className="text-blue-500 transition-all duration-1000" strokeDasharray={175} strokeDashoffset={175 - (score / 100) * 175} />
-                          </svg>
-                        </div>
-                      </div>
+                  <div
+                    key={category}
+                    className="p-4 flex justify-between items-center rounded-sm transition-all hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(10,36,99,0.08)]"
+                    style={{ background: '#F2ECD8', border: '1px solid #C8B99A' }}
+                  >
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: '#6B5A42' }}>
+                        {category}
+                      </p>
+                      <p className={`text-2xl font-black ${getScoreColor(score)}`} style={{ fontFamily: "'Cormorant Garamond',serif" }}>
+                        {score}
+                      </p>
                     </div>
-                  </Card>
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center relative" style={{ border: '3px solid #EDE4CC' }}>
+                      <span className="text-xs font-bold" style={{ color: '#0A2463' }}>
+                        {score}%
+                      </span>
+                      <svg className="absolute inset-0 w-full h-full -rotate-90">
+                        <circle cx="28" cy="28" r="25" fill="none" stroke="#1A4FAD" strokeWidth="3" className="transition-all duration-1000" strokeDasharray={157} strokeDashoffset={157 - (score / 100) * 157} />
+                      </svg>
+                    </div>
+                  </div>
                 ))}
             </div>
           </div>
 
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <span className="mr-2">📦</span> Stok Soal (Stock Check)
-            </h2>
-            <Card className="p-1 overflow-hidden">
-              <ul className="divide-y divide-gray-100">
-                {['Grammar', 'Vocabulary', 'Reading', 'Cloze'].map((cat) => {
-                  const count = questions.filter((q) => q.category === cat).length;
-                  const isLow = count < 50;
-                  return (
-                    <li key={cat} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                      <span className="text-sm font-medium text-gray-700">{cat}</span>
-                      <div className="flex items-center">
-                        <span className={`text-sm font-bold mr-2 ${isLow ? 'text-orange-600' : 'text-green-600'}`}>{count} item</span>
-                        {isLow && <span className="flex h-2 w-2 rounded-full bg-orange-500 animate-pulse"></span>}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-              <div className="bg-gray-50 p-3 text-center">
-                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Minimal stok: 50 per kategori</p>
-              </div>
-            </Card>
+          <div className="rounded-sm p-6" style={{ background: '#FAF6EC', border: '1px solid #C8B99A' }}>
+            <div className="flex items-center gap-2 mb-2">
+              <span>📦</span>
+              <h2 className="font-bold text-lg" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+                Stok Soal
+              </h2>
+            </div>
+            <GoldRule opacity={0.6} />
+
+            <ul className="divide-y mt-3" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
+              {['Grammar', 'Vocabulary', 'Reading', 'Cloze'].map((cat) => {
+                const count = questions.filter((q) => q.category === cat).length;
+                const isLow = count < 50;
+                return (
+                  <li key={cat} className="py-3 flex items-center justify-between">
+                    <span className="text-sm font-medium" style={{ color: '#0A2463' }}>
+                      {cat}
+                    </span>
+                    <div className="flex items-center">
+                      <span className="text-sm font-bold mr-2 font-mono" style={{ color: isLow ? '#BF0A30' : '#16A34A' }}>
+                        {count} item
+                      </span>
+                      {isLow && <span className="flex h-2 w-2 rounded-full animate-pulse" style={{ background: '#BF0A30' }}></span>}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="mt-4 p-2 text-center rounded-sm" style={{ background: '#EDE4CC' }}>
+              <p className="text-[9px] uppercase font-black tracking-widest" style={{ color: '#6B5A42' }}>
+                Minimal stok: 50 per kategori
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Recent Results */}
+        {/* ══ RECENT RESULTS ══ */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Hasil Ujian Terbaru</h2>
+          <div className="flex items-center gap-2 mb-2">
+            <span>🗄️</span>
+            <h2 className="font-bold text-lg" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+              Hasil Ujian Terbaru
+            </h2>
+          </div>
+          <GoldRule opacity={0.6} />
 
-          {loading ? (
-            <Card className="p-8 text-center">
-              <div className="text-gray-600">Memuat hasil...</div>
-            </Card>
-          ) : results.length === 0 ? (
-            <Card className="p-8 text-center">
-              <div className="text-gray-600 mb-2">Tidak ada hasil ujian ditemukan</div>
-              <div className="text-sm text-gray-500">Siswa belum mengambil ujian apapun.</div>
-            </Card>
-          ) : (
-            <Card>
+          <div className="mt-4 rounded-sm overflow-hidden" style={{ background: '#FAF6EC', border: '1px solid #C8B99A' }}>
+            {/* PENAMBAHAN AKSEN MERAH DI SINI */}
+            <RedRule opacity={0.6} />
+            {loading ? (
+              <div className="p-12 text-center">
+                <p className="text-lg italic" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+                  Memuat arsip hasil...
+                </p>
+              </div>
+            ) : results.length === 0 ? (
+              <div className="p-12 text-center">
+                <p className="text-3xl mb-3 opacity-30">📭</p>
+                <p className="text-sm italic" style={{ fontFamily: "'IM Fell English',serif", color: '#6B5A42' }}>
+                  Siswa belum mengambil ujian apapun.
+                </p>
+              </div>
+            ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
+                  <thead style={{ background: '#EDE4CC' }}>
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Siswa</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sekolah</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Skor Total</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tata Bahasa</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kosakata</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Membaca</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rumpang</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                      {['Siswa', 'Sekolah', 'Skor Total', 'Tata Bahasa', 'Kosakata', 'Membaca', 'Rumpang', 'Tanggal', 'Aksi'].map((head) => (
+                        <th key={head} className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42' }}>
+                          {head}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="divide-y" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
                     {results.map((result) => (
-                      <tr key={result.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{result.profiles?.full_name || 'Anonymous Student'}</div>
+                      <tr key={result.id} className="transition-colors hover:bg-[#EDE4CC]/40">
+                        <td className="px-5 py-4 whitespace-nowrap text-sm font-bold" style={{ color: '#0A2463' }}>
+                          {result.profiles?.full_name || 'Anonymous Student'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-600">{result.profiles?.school || 'Unknown School'}</div>
+                        <td className="px-5 py-4 whitespace-nowrap text-xs" style={{ color: '#6B5A42' }}>
+                          {result.profiles?.school || 'Unknown School'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-5 py-4 whitespace-nowrap">
                           <span className={`text-sm font-bold ${getScoreColor(result.score_total)}`}>{result.score_total}/100</span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{result.category_scores?.grammar?.score || 0}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{result.category_scores?.vocab?.score || 0}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{result.category_scores?.reading?.score || 0}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{result.category_scores?.cloze?.score || 0}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{formatDate(result.created_at)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
-                          <button onClick={() => setSelectedResult(result)} className="text-blue-600 hover:text-blue-900 font-bold">
+                        <td className="px-5 py-4 whitespace-nowrap text-xs font-mono text-center">{result.category_scores?.grammar?.score || 0}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-xs font-mono text-center">{result.category_scores?.vocab?.score || 0}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-xs font-mono text-center">{result.category_scores?.reading?.score || 0}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-xs font-mono text-center">{result.category_scores?.cloze?.score || 0}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-[11px] font-mono" style={{ color: '#6B5A42' }}>
+                          {formatDate(result.created_at)}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-right">
+                          <button onClick={() => setSelectedResult(result)} className="text-xs font-bold transition-colors hover:underline" style={{ color: '#1A4FAD' }}>
                             Rincian
                           </button>
                         </td>
@@ -400,69 +458,71 @@ const Reports = () => {
                   </tbody>
                 </table>
               </div>
-            </Card>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Result Details Modal */}
+      {/* ══ RESULT DETAILS MODAL ══ */}
       {selectedResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-[#0A2463]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
+          <div className="rounded-sm max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl bg-[#FAF6EC] border border-[#C8B99A]">
+            {/* PENAMBAHAN AKSEN MERAH DI SINI */}
+            <RedRule />
+            <div className="p-6 md:p-8">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Detail Ujian</h3>
+                <h3 className="text-2xl font-bold" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+                  Arsip Rincian Ujian
+                </h3>
                 <Button variant="outline" size="sm" onClick={() => setSelectedResult(null)}>
                   Tutup
                 </Button>
               </div>
+              <GoldRule opacity={0.6} />
 
-              <div className="space-y-4">
+              <div className="space-y-6 mt-6">
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Informasi Siswa</h4>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Nama:</span>
-                      <span className="font-medium">{selectedResult.profiles?.full_name || 'Unknown'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Sekolah:</span>
-                      <span className="font-medium">{selectedResult.profiles?.school || 'Unknown'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tanggal:</span>
-                      <span className="font-medium">{formatDate(selectedResult.created_at)}</span>
-                    </div>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: '#6B5A42' }}>
+                    Informasi Profil
+                  </h4>
+                  <div className="rounded-sm p-5 space-y-3" style={{ background: '#F2ECD8', border: '1px solid rgba(200,185,154,0.5)' }}>
+                    {[
+                      { label: 'Nama Lengkap', value: selectedResult.profiles?.full_name || 'Unknown' },
+                      { label: 'Institusi/Sekolah', value: selectedResult.profiles?.school || 'Unknown' },
+                      { label: 'Waktu Pelaksanaan', value: formatDate(selectedResult.created_at) },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex justify-between items-end border-b pb-1" style={{ borderColor: 'rgba(200,185,154,0.3)' }}>
+                        <span className="text-xs" style={{ color: '#6B5A42' }}>
+                          {label}
+                        </span>
+                        <span className="text-sm font-bold" style={{ color: '#0A2463' }}>
+                          {value}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Rincian Skor</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="text-center">
-                        <div className={`text-2xl font-bold ${getScoreColor(selectedResult.score_total)}`}>{selectedResult.score_total}</div>
-                        <div className="text-sm text-gray-600">Skor Total</div>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: '#6B5A42' }}>
+                    Distribusi Nilai
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { label: 'Skor Total', value: selectedResult.score_total, color: getScoreColor(selectedResult.score_total) },
+                      { label: 'Tata Bahasa', value: selectedResult.score_grammar, color: getScoreColor(selectedResult.score_grammar) },
+                      { label: 'Kosakata', value: selectedResult.score_vocab, color: getScoreColor(selectedResult.score_vocab) },
+                      { label: 'Membaca', value: selectedResult.score_reading, color: getScoreColor(selectedResult.score_reading) },
+                    ].map(({ label, value, color }) => (
+                      <div key={label} className="rounded-sm p-4 text-center transition-transform hover:-translate-y-1" style={{ background: '#F2ECD8', border: '1px solid rgba(200,185,154,0.5)' }}>
+                        <div className={`text-3xl font-black ${color}`} style={{ fontFamily: "'Cormorant Garamond',serif" }}>
+                          {value || 0}
+                        </div>
+                        <div className="text-[10px] uppercase font-bold tracking-widest mt-2" style={{ color: '#6B5A42' }}>
+                          {label}
+                        </div>
                       </div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="text-center">
-                        <div className={`text-2xl font-bold ${getScoreColor(selectedResult.score_grammar)}`}>{selectedResult.score_grammar}</div>
-                        <div className="text-sm text-gray-600">Tata Bahasa</div>
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="text-center">
-                        <div className={`text-2xl font-bold ${getScoreColor(selectedResult.score_vocab)}`}>{selectedResult.score_vocab}</div>
-                        <div className="text-sm text-gray-600">Kosakata</div>
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="text-center">
-                        <div className={`text-2xl font-bold ${getScoreColor(selectedResult.score_reading)}`}>{selectedResult.score_reading}</div>
-                        <div className="text-sm text-gray-600">Membaca</div>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>

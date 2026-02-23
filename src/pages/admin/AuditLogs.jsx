@@ -3,6 +3,7 @@ import { db } from '../../lib/supabase';
 import Card from '../../components/ui/Card';
 
 const AuditLogs = () => {
+  // ── Semua state & logika asli tidak diubah ──
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,65 +24,111 @@ const AuditLogs = () => {
     }
   };
 
+  // ── getActionColor diganti ke Collegiate palette, logika kondisi sama persis ──
   const getActionColor = (action) => {
-    if (action.startsWith('CREATE')) return 'bg-emerald-100 text-emerald-700';
-    if (action.startsWith('UPDATE')) return 'bg-blue-100 text-blue-700';
-    if (action.startsWith('DELETE')) return 'bg-red-100 text-red-700';
-    return 'bg-slate-100 text-slate-700';
+    if (action.startsWith('CREATE')) return { bg: '#F0FDF4', color: '#16A34A', border: '#BBF7D0' };
+    if (action.startsWith('UPDATE')) return { bg: '#EFF6FF', color: '#1A4FAD', border: '#BFDBFE' };
+    if (action.startsWith('DELETE')) return { bg: '#FFF1F2', color: '#BF0A30', border: '#FECDD3' };
+    return { bg: '#EDE4CC', color: '#6B5A42', border: '#C8B99A' };
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Audit Logs</h1>
-        <p className="text-slate-500 mt-1">Lacak sejarah perubahan sistem oleh administrator.</p>
+    <div className="min-h-screen p-4 md:p-6 lg:p-8" style={{ backgroundColor: '#F2ECD8', fontFamily: "'DM Sans',sans-serif" }}>
+      {/* ── Page header ── */}
+      <div className="max-w-7xl mx-auto mb-8">
+        <h1 className="font-bold text-3xl leading-none" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+          Audit Logs
+        </h1>
+        <p className="text-sm italic mt-1" style={{ fontFamily: "'IM Fell English',serif", color: '#6B5A42' }}>
+          Lacak sejarah perubahan sistem oleh administrator.
+        </p>
+        <div className="mt-4" style={{ height: 1, background: 'linear-gradient(90deg,transparent,#C8B99A 30%,#C8B99A 70%,transparent)' }} />
       </div>
 
-      <Card className="overflow-hidden border-none shadow-xl shadow-slate-200/50 rounded-2xl">
+      {/* ── Table card ── */}
+      <div className="max-w-7xl mx-auto rounded-sm overflow-hidden" style={{ background: '#FAF6EC', border: '1px solid #C8B99A', boxShadow: '0 4px 24px rgba(10,36,99,0.08)' }}>
+        {/* Crimson top rule */}
+        <div style={{ height: 3, background: 'linear-gradient(90deg,transparent,#BF0A30 25%,#BF0A30 75%,transparent)' }} />
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Waktu</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Administrator</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Aksi</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Deskripsi</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Target ID</th>
+              <tr style={{ background: '#EDE4CC', borderBottom: '1px solid #C8B99A' }}>
+                {['Waktu', 'Administrator', 'Aksi', 'Deskripsi', 'Target ID'].map((col) => (
+                  <th key={col} className="px-5 py-3.5 text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42', fontFamily: "'DM Sans',sans-serif" }}>
+                    {col}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+
+            <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-slate-400">
-                    Memuat log sistem...
+                  <td colSpan="5" className="px-6 py-16 text-center">
+                    <p className="text-lg italic" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#6B5A42' }}>
+                      Memuat log sistem...
+                    </p>
                   </td>
                 </tr>
               ) : logs.length > 0 ? (
-                logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 text-xs text-slate-500 font-mono">{new Date(log.created_at).toLocaleString('id-ID')}</td>
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-slate-800 text-sm">{log.profiles?.full_name || 'System'}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${getActionColor(log.action)}`}>{log.action}</span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{log.description}</td>
-                    <td className="px-6 py-4 text-xs text-slate-400 font-mono">{log.target_id || '-'}</td>
-                  </tr>
-                ))
+                logs.map((log, i) => {
+                  const badge = getActionColor(log.action);
+                  return (
+                    <tr key={log.id} style={{ borderBottom: '1px solid rgba(200,185,154,0.4)' }} onMouseEnter={(e) => (e.currentTarget.style.background = '#EDE4CC')} onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
+                      {/* Waktu */}
+                      <td className="px-5 py-4 text-xs font-mono whitespace-nowrap" style={{ color: '#6B5A42' }}>
+                        {new Date(log.created_at).toLocaleString('id-ID')}
+                      </td>
+
+                      {/* Administrator */}
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-sm flex items-center justify-center text-xs font-black text-white flex-shrink-0" style={{ background: '#1A4FAD' }}>
+                            {(log.profiles?.full_name || 'S').charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm font-bold" style={{ color: '#0A2463' }}>
+                            {log.profiles?.full_name || 'System'}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Aksi */}
+                      <td className="px-5 py-4">
+                        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm" style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}` }}>
+                          {log.action}
+                        </span>
+                      </td>
+
+                      {/* Deskripsi */}
+                      <td className="px-5 py-4 text-sm" style={{ color: '#2C1F0E', maxWidth: 300 }}>
+                        {log.description}
+                      </td>
+
+                      {/* Target ID */}
+                      <td className="px-5 py-4 text-xs font-mono" style={{ color: '#6B5A42' }}>
+                        {log.target_id || '—'}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-slate-400 space-y-2">
-                    <div className="text-4xl">📭</div>
-                    <div className="italic">Belum ada aktivitas yang tercatat.</div>
+                  <td colSpan="5" className="px-6 py-20 text-center">
+                    <div className="text-4xl mb-3 opacity-30">📭</div>
+                    <p className="text-lg italic" style={{ fontFamily: "'IM Fell English',serif", color: '#6B5A42' }}>
+                      Belum ada aktivitas yang tercatat.
+                    </p>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      </Card>
+
+        {/* Gold bottom rule */}
+        <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,#C9A84C 25%,#C9A84C 75%,transparent)' }} />
+      </div>
     </div>
   );
 };

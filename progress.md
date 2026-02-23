@@ -29,7 +29,14 @@ Ringkasan pencapaian pengembangan sistem ujian English Diagnostic & Proficiency.
 - **Dynamic Packages**: CRUD Manajemen paket ujian secara dinamis langsung dari interface admin.
 - **Results Center**: Pusat data hasil ujian dengan fitur _sorting_ per kolom (Nama, Skor, Tanggal).
 - **Audit Logs**: Rekam jejak aktivitas admin untuk keamanan dan transparansi sistem.
-- **Export Feature**: Dukungan ekspor laporan nilai siswa ke format CSV.
+- [x] Export Feature: Dukungan ekspor laporan nilai siswa ke format CSV.
+
+## 📚 Phase 5: PWA Learning & Offline Dictionary
+
+- **Offline Sync**: Implementasi IndexedDB agar kamus dan materi tetap bisa diakses tanpa internet.
+- **Manajemen Materi**: Panel admin baru untuk mengelola database kosakata dan grammar.
+- **Categorized Learning**: Pengelompokan materi berdasarkan Vocab, Grammar, dan level CEFR.
+- **Native Experience**: Penambahan navigasi instan di dashboard siswa untuk akses materi belajar.
 
 ---
 
