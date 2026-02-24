@@ -10,10 +10,21 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // Profile Cache Key
+  const CACHE_KEY = 'scholara_user_profile';
 
   // Inisialisasi state otentikasi
   useEffect(() => {
     let mounted = true;
+
+    // Listen for connectivity changes
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     const initAuth = async () => {
       console.log('Auth: Initializing...');
@@ -30,11 +41,19 @@ export const AuthProvider = ({ children }) => {
         if (session?.user) {
           console.log('Auth: Session found', session.user.id);
           setUser(session.user);
+
+          // Coba ambil dari cache dulu jika offline atau untuk kecepatan
+          const cachedProfile = localStorage.getItem(CACHE_KEY);
+          if (cachedProfile) {
+            setProfile(JSON.parse(cachedProfile));
+          }
+
           await fetchProfile(session.user.id);
         } else {
           console.log('Auth: No session found');
           setUser(null);
           setProfile(null);
+          localStorage.removeItem(CACHE_KEY);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -49,16 +68,26 @@ export const AuthProvider = ({ children }) => {
 
     initAuth();
 
+    // Debug URL hash
+    if (window.location.hash) {
+      console.log('Auth: Detected hash in URL:', window.location.hash.substring(0, 20) + '...');
+    }
+
     // Dengarkan perubahan auth
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth: State change event', event);
-      if (event === 'SIGNED_IN' && session?.user) {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+        console.log('Auth: User signed in, fetching profile...');
         setUser(session.user);
-        await fetchProfile(session.user.id);
+        const profileData = await fetchProfile(session.user.id);
+        if (!profileData) {
+          console.warn('Auth: Profile still missing after retries.');
+        }
         setLoading(false);
       } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        console.log('Auth: User signed out');
         setUser(null);
         setProfile(null);
         setLoading(false);
@@ -68,23 +97,38 @@ export const AuthProvider = ({ children }) => {
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
   // Ambil profil pengguna
   const fetchProfile = async (userId, retries = 3) => {
     try {
+      // Jika offline, jangan panggil DB, andalkan cache yang sudah ada atau biarkan null
+      if (!navigator.onLine) {
+        console.log('Auth: Offline, skipping live profile fetch');
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) return JSON.parse(cached);
+        return null;
+      }
+
       const { data, error } = await db.getProfile(userId);
 
       // Jika profil tidak ditemukan dan sisa retries ada (kemungkinan delay Trigger), tunggu dan coba lagi
       if (!data && retries > 0) {
         console.log(`Profile not found yet, retrying... (${retries} left)`);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1500)); // Increased wait time
         return fetchProfile(userId, retries - 1);
       }
 
       if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "Row not found"
-      setProfile(data);
+
+      if (data) {
+        setProfile(data);
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+      }
+
       return data;
     } catch (error) {
       console.error('Profile fetch error:', error);
@@ -109,6 +153,22 @@ export const AuthProvider = ({ children }) => {
       console.error('Sign in error:', error);
       setError(error.message);
       return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Masuk dengan Google
+  const signInWithGoogle = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      const { error } = await auth.signInWithGoogle();
+      if (error) throw error;
+      // Redirect ditangani oleh Supabase OAuth
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -175,6 +235,7 @@ export const AuthProvider = ({ children }) => {
 
       setUser(null);
       setProfile(null);
+      localStorage.removeItem(CACHE_KEY);
 
       return { success: true };
     } catch (error) {
@@ -203,11 +264,13 @@ export const AuthProvider = ({ children }) => {
     loading,
     error,
     signIn,
+    signInWithGoogle,
     signUp,
     signOut,
     hasRole,
     isAdmin,
     isStudent,
+    isOnline,
     fetchProfile,
     setError,
   };

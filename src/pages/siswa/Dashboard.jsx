@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useExam } from '../../context/ExamContext';
 import { db } from '../../lib/supabase';
+import { localDB } from '../../utils/indexedDB';
 
 // ── Shield Icon ──
 const ShieldIcon = ({ size = 32 }) => (
@@ -147,12 +148,28 @@ const Dashboard = () => {
   useEffect(() => {
     loadDashboardData();
     clearExam();
+
+    // Sync queued results if online
+    if (navigator.onLine) {
+      syncQueuedResults();
+    }
+
+    const handleOnline = () => syncQueuedResults();
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
   }, []);
 
   // ── Semua fungsi asli tidak diubah ──
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+
+      // Jika offline, andalkan data yang mungkin sudah ada di state (atau cache)
+      if (!navigator.onLine) {
+        console.log('Dashboard: Offline mode, using existing state');
+        return;
+      }
+
       const { data, error } = await db.getExamResults(profile?.id);
       if (error) throw error;
       if (data && data.length > 0) {
@@ -170,7 +187,39 @@ const Dashboard = () => {
     }
   };
 
-  const startExam = (packageId) => navigate(`/siswa/exam?paket=${packageId}`);
+  const syncQueuedResults = async () => {
+    if (!navigator.onLine) return;
+
+    try {
+      const queued = await localDB.getQueuedResults();
+      if (queued.length === 0) return;
+
+      console.log(`Dashboard: Syncing ${queued.length} queued results...`);
+
+      for (const result of queued) {
+        // Hapus metadata IndexedDB sebelum simpan ke Supabase
+        const { id: queueId, status: queueStatus, ...payload } = result;
+        const { error } = await db.saveExamResult(payload);
+        if (!error) {
+          await localDB.removeQueuedResult(queueId);
+        }
+      }
+
+      // Refresh dashboard data after sync
+      loadDashboardData();
+    } catch (error) {
+      console.error('Dashboard: Sync failed', error);
+    }
+  };
+
+  const startExam = (packageId) => {
+    const pkg = examPackages.find((p) => p.id === packageId);
+    if (!navigator.onLine && pkg.type === 'ujian') {
+      alert('Maaf, paket ujian ini membutuhkan koneksi internet. Silakan beralih ke menu Kamus atau Latihan Harian.');
+      return;
+    }
+    navigate(`/siswa/exam?paket=${packageId}`);
+  };
 
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -298,6 +347,7 @@ const Dashboard = () => {
     <div className="min-h-screen pb-12" style={{ backgroundColor: '#F2ECD8', fontFamily: "'DM Sans',sans-serif" }}>
       {/* ══════════ HEADER ══════════ */}
       <header
+        className="sticky top-0 z-40"
         style={{
           backgroundColor: '#0A2463',
           backgroundImage: `
@@ -309,56 +359,58 @@ const Dashboard = () => {
       >
         <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,#C9A84C 25%,#C9A84C 75%,transparent)' }} />
 
-        <div className="max-w-6xl mx-auto px-4 py-4">
+        <div className="max-w-6xl mx-auto px-4 py-3 md:py-4">
           <div className="flex items-center justify-between">
             {/* Left: Logo + greeting */}
-            <div className="flex items-center gap-3">
-              <ShieldIcon size={30} />
-              <div>
-                <h1 className="text-white font-bold text-lg leading-none" style={{ fontFamily: "'Cormorant Garamond',serif" }}>
+            <div className="flex items-center gap-2 md:gap-3">
+              <ShieldIcon size={28} />
+              <div className="min-w-0">
+                <h1 className="text-white font-bold text-base md:text-lg leading-none truncate" style={{ fontFamily: "'Cormorant Garamond',serif" }}>
                   Halo, {profile?.full_name?.split(' ')[0]}!
                 </h1>
-                <p className="text-xs mt-0.5 italic" style={{ color: '#C9A84C', fontFamily: "'IM Fell English',serif" }}>
+                <p className="text-[10px] md:text-xs mt-0.5 italic truncate" style={{ color: '#C9A84C', fontFamily: "'IM Fell English',serif" }}>
                   {profile?.school}
                 </p>
               </div>
             </div>
 
-            {/* Right: Streak + actions */}
-            <div className="flex items-center gap-3">
-              {/* Streak badge */}
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm" style={{ background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)' }}>
-                <span className="text-base">🔥</span>
-                <div>
-                  <span className="text-white font-bold text-sm">{streak}</span>
-                  <span className="text-xs ml-1" style={{ color: '#C9A84C' }}>
-                    hari
-                  </span>
+            {/* Right: Streak + Offline Badge + Desktop Actions */}
+            <div className="flex items-center gap-2 md:gap-4">
+              {/* Offline Badge (Compact on mobile) */}
+              {!navigator.onLine && (
+                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded-sm">
+                  <span className="animate-pulse w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span className="text-[8px] md:text-[10px] font-bold text-amber-500 uppercase tracking-widest">Offline</span>
                 </div>
+              )}
+
+              {/* Streak badge */}
+              <div className="flex items-center gap-1.5 px-2 md:px-3 py-1 md:py-1.5 rounded-sm" style={{ background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)' }}>
+                <span className="text-sm md:text-base">🔥</span>
+                <span className="text-white font-bold text-xs md:text-sm">{streak}</span>
               </div>
 
-              <button
-                onClick={() => navigate('/siswa/dictionary')}
-                className="px-3 py-1.5 text-xs font-bold rounded-sm transition-all flex items-center gap-1.5"
-                style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.18)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
-              >
-                <span>📖</span> Kamus
-              </button>
+              {/* Desktop-only Actions */}
+              <div className="hidden md:flex items-stretch gap-3">
+                <button
+                  onClick={() => navigate('/siswa/dictionary')}
+                  className="px-3 py-2 text-xs font-bold rounded-sm transition-all flex items-center gap-1.5"
+                  style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+                >
+                  <span>📖</span> Kamus
+                </button>
 
-              <button
-                onClick={() => {
-                  signOut();
-                  navigate('/login');
-                }}
-                className="px-3 py-1.5 text-xs font-bold rounded-sm transition-all"
-                style={{ color: '#FECDD3', border: '1px solid rgba(191,10,48,0.3)', background: 'rgba(191,10,48,0.1)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(191,10,48,0.2)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(191,10,48,0.1)')}
-              >
-                Keluar
-              </button>
+                <button
+                  onClick={() => {
+                    signOut();
+                    navigate('/login');
+                  }}
+                  className="px-3 py-1.5 text-xs font-bold rounded-sm transition-all"
+                  style={{ color: '#FECDD3', border: '1px solid rgba(191,10,48,0.3)', background: 'rgba(191,10,48,0.1)' }}
+                >
+                  Keluar
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -381,47 +433,44 @@ const Dashboard = () => {
           }}
         >
           {/* Gold corner ornaments */}
-          <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-gold opacity-40" style={{ borderColor: '#C9A84C' }} />
-          <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 opacity-40" style={{ borderColor: '#C9A84C' }} />
-          <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 opacity-40" style={{ borderColor: '#C9A84C' }} />
-          <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 opacity-40" style={{ borderColor: '#C9A84C' }} />
+          <div className="absolute top-0 left-0 w-8 md:w-12 h-8 md:h-12 border-t-2 border-l-2 border-gold opacity-40" style={{ borderColor: '#C9A84C' }} />
+          <div className="absolute top-0 right-0 w-8 md:w-12 h-8 md:h-12 border-t-2 border-r-2 opacity-40" style={{ borderColor: '#C9A84C' }} />
+          <div className="absolute bottom-0 left-0 w-8 md:w-12 h-8 md:h-12 border-b-2 border-l-2 opacity-40" style={{ borderColor: '#C9A84C' }} />
+          <div className="absolute bottom-0 right-0 w-8 md:w-12 h-8 md:h-12 border-b-2 border-r-2 opacity-40" style={{ borderColor: '#C9A84C' }} />
 
           <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,#C9A84C 25%,#C9A84C 75%,transparent)' }} />
 
-          <div className="px-8 py-10 relative z-10">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+          <div className="px-5 md:px-8 py-8 md:py-10 relative z-10">
+            <div className="flex flex-col lg:flex-row items-center lg:items-center justify-between gap-6 md:gap-8 text-center lg:text-left">
               {/* Left content */}
-              <div className="flex-1">
+              <div className="flex-1 flex flex-col items-center lg:items-start">
                 {/* Label */}
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-sm" style={{ background: 'rgba(191,10,48,0.8)', color: '#fff', letterSpacing: '0.15em' }}>
+                <div className="flex items-center gap-2 mb-3 md:mb-4">
+                  <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest px-2 md:py-1 rounded-sm" style={{ background: 'rgba(191,10,48,0.8)', color: '#fff' }}>
                     ✦ Mulai Di Sini
-                  </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'rgba(201,168,76,0.7)' }}>
-                    Langkah Pertama
                   </span>
                 </div>
 
-                <h2 className="text-white text-4xl font-bold leading-tight mb-2" style={{ fontFamily: "'Cormorant Garamond',serif" }}>
+                <h2 className="text-white text-2xl md:text-4xl font-bold leading-tight mb-1" style={{ fontFamily: "'Cormorant Garamond',serif" }}>
                   Kickstart Diagnostic
                 </h2>
-                <p className="text-base italic mb-1" style={{ fontFamily: "'IM Fell English',serif", color: '#C9A84C' }}>
+                <p className="text-xs md:text-base italic mb-4 md:mb-1" style={{ fontFamily: "'IM Fell English',serif", color: '#C9A84C' }}>
                   "The Level Check"
                 </p>
-                <p className="text-sm leading-relaxed mb-6 max-w-lg" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                  Ukur kemampuan awalmu sebelum belajar lebih jauh. Tes komprehensif ini akan membentuk profil belajarmu dan merekomendasikan jalur yang paling tepat untukmu.
+                <p className="hidden md:block text-sm leading-relaxed mb-6 max-w-lg" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  Tes komprehensif untuk mengukur kemampuan awal dan membentuk profil belajarmu.
                 </p>
 
                 {/* Meta info */}
-                <div className="flex items-center gap-6 mb-8">
+                <div className="flex items-center gap-4 md:gap-6 mb-6 md:mb-8">
                   {[
-                    { icon: '⏱', label: '60 menit' },
+                    { icon: '⏱', label: '60m' },
                     { icon: '📄', label: '50 soal' },
-                    { icon: '📊', label: 'Mixed Level' },
+                    { icon: '📊', label: 'Mixed' },
                   ].map(({ icon, label }) => (
-                    <div key={label} className="flex items-center gap-2">
-                      <span className="text-base">{icon}</span>
-                      <span className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                    <div key={label} className="flex items-center gap-1.5 md:gap-2">
+                      <span className="text-sm md:text-base">{icon}</span>
+                      <span className="text-[11px] md:text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
                         {label}
                       </span>
                     </div>
@@ -431,28 +480,16 @@ const Dashboard = () => {
                 {/* CTA */}
                 <button
                   onClick={() => startExam('kickstart_diagnostic')}
-                  className="px-8 py-3.5 text-sm font-bold rounded-sm transition-all flex items-center gap-2"
-                  style={{ background: '#1A4FAD', color: '#fff', boxShadow: '0 4px 16px rgba(26,79,173,0.4)' }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#2460C8';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(26,79,173,0.5)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#1A4FAD';
-                    e.currentTarget.style.transform = 'none';
-                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(26,79,173,0.4)';
-                  }}
+                  className={`w-full md:w-auto px-6 md:px-8 py-3 md:py-3.5 text-xs md:text-sm font-bold rounded-sm transition-all flex items-center justify-center gap-2 ${!navigator.onLine ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+                  style={{ background: '#1A4FAD', color: '#fff', boxShadow: !navigator.onLine ? 'none' : '0 4px 16px rgba(26,79,173,0.4)' }}
+                  disabled={!navigator.onLine}
                 >
-                  Mulai Diagnostic Sekarang
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
+                  {!navigator.onLine ? 'Butuh Koneksi Internet' : 'Mulai Diagnostic'}
                 </button>
               </div>
 
-              {/* Right: decorative crest */}
-              <div className="hidden lg:flex flex-col items-center gap-3 opacity-20">
+              {/* Right: decorative crest (hidden small mobile) */}
+              <div className="hidden md:flex flex-col items-center gap-3 opacity-20">
                 <ShieldIcon size={120} />
               </div>
             </div>
@@ -462,29 +499,30 @@ const Dashboard = () => {
         </section>
 
         {/* ══════════ STATS BAR ══════════ */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           {[
-            { label: 'Tryout Dikerjakan', value: stats.totalExams, icon: '📝', suffix: 'x' },
-            { label: 'Rata-rata Skor', value: stats.averageScore, icon: '⭐', suffix: '/100' },
+            { label: 'Ujian Dikerjakan', value: stats.totalExams, icon: '📝', suffix: 'x' },
+            { label: 'Rata-rata Skor', value: stats.averageScore, icon: '⭐', suffix: '%' },
             {
-              label: 'Terakhir Tryout',
+              label: 'Terakhir Ujian',
               value: stats.lastExamDate ? formatDate(stats.lastExamDate) : 'Belum ada',
               icon: '📅',
               suffix: '',
               isDate: true,
+              span: 'col-span-2 md:col-span-1',
             },
-          ].map(({ label, value, icon, suffix, isDate }) => (
-            <div key={label} className="rounded-sm p-5 flex items-center gap-4" style={{ background: '#FAF6EC', border: '1px solid #C8B99A' }}>
-              <div className="w-10 h-10 rounded-sm flex items-center justify-center flex-shrink-0 text-xl" style={{ background: '#EDE4CC' }}>
+          ].map(({ label, value, icon, suffix, isDate, span = '' }) => (
+            <div key={label} className={`rounded-sm p-3 md:p-5 flex items-center gap-3 md:gap-4 ${span}`} style={{ background: '#FAF6EC', border: '1px solid #C8B99A' }}>
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-sm flex items-center justify-center flex-shrink-0 text-lg md:text-xl" style={{ background: '#EDE4CC' }}>
                 {icon}
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-wider truncate" style={{ color: '#6B5A42' }}>
+                <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-wider truncate" style={{ color: '#6B5A42' }}>
                   {label}
                 </p>
-                <p className="font-bold mt-0.5" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463', fontSize: isDate ? 14 : 22 }}>
-                  {value}
-                  {suffix}
+                <p className="font-bold mt-0.5 truncate" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463', fontSize: isDate ? (span ? 12 : 11) : 20 }}>
+                  <span className="md:text-2xl">{value}</span>
+                  <span className="text-[10px] md:text-xs ml-0.5">{suffix}</span>
                 </p>
               </div>
             </div>
@@ -560,20 +598,25 @@ const Dashboard = () => {
 
             {/* Latihan */}
             <section>
-              <div className="flex items-center gap-2 mb-1">
-                <svg className="w-4 h-4" fill="none" stroke="#BF0A30" viewBox="0 0 24 24" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <h2 className="font-bold" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463', fontSize: 18 }}>
-                  Latihan — Daily & Focused
-                </h2>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="#BF0A30" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <h2 className="font-bold" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463', fontSize: 18 }}>
+                    Latihan — Daily & Focused
+                  </h2>
+                </div>
+                <span className="md:hidden text-[10px] font-bold text-crimson animate-pulse">Geser ➜</span>
               </div>
               <GoldRule opacity={0.6} />
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+              <div className="flex md:grid md:grid-cols-3 gap-3 mt-4 overflow-x-auto pb-4 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
                 {examPackages
                   .filter((p) => p.type === 'latihan')
                   .map((pkg) => (
-                    <SkillCard key={pkg.id} pkg={pkg} />
+                    <div key={pkg.id} className="min-w-[140px] md:min-w-0 flex-1">
+                      <SkillCard pkg={pkg} />
+                    </div>
                   ))}
               </div>
             </section>

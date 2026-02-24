@@ -148,7 +148,7 @@ const AdminLearning = () => {
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
             <h1 className="font-bold text-3xl leading-none" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
-              Manajemen Materi Belajar
+              Materi Belajar/Kamus
             </h1>
             <p className="text-sm italic mt-1" style={{ fontFamily: "'IM Fell English',serif", color: '#6B5A42' }}>
               Kelola kamus dan referensi tata bahasa untuk siswa.
@@ -208,7 +208,8 @@ const AdminLearning = () => {
       <div className="max-w-7xl mx-auto rounded-sm overflow-hidden" style={{ background: '#FAF6EC', border: '1px solid #C8B99A', boxShadow: '0 4px 24px rgba(10,36,99,0.08)' }}>
         <RedRule opacity={0.6} />
 
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr style={{ background: '#EDE4CC', borderBottom: '1px solid #C8B99A' }}>
@@ -271,6 +272,56 @@ const AdminLearning = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-[rgba(200,185,154,0.4)]">
+          {loading ? (
+            <div className="px-6 py-12 text-center text-sm italic text-[#6B5A42]" style={{ fontFamily: "'Cormorant Garamond',serif" }}>
+              Memuat materi...
+            </div>
+          ) : paginatedMaterials.length > 0 ? (
+            paginatedMaterials.map((m) => (
+              <div key={m.id} className="p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-bold text-lg text-[#0A2463]" style={{ fontFamily: "'Cormorant Garamond',serif" }}>
+                      {m.term}
+                    </div>
+                    <div className="flex gap-2 mt-1">
+                      <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm" style={{ backgroundColor: '#F2ECD8', color: '#0A2463', border: '1px solid #C8B99A' }}>
+                        {m.category}
+                      </span>
+                      <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm" style={levelBadgeStyle(m.level)}>
+                        {m.level}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => handleOpenModal(m)} className="p-2 bg-[#1A4FAD]/10 rounded-sm text-[#1A4FAD]">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </button>
+                    <button onClick={() => handleDelete(m.id, m.term)} className="p-2 bg-[#BF0A30]/10 rounded-sm text-[#BF0A30]">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                {m.sub_category && (
+                  <p className="text-xs italic text-[#6B5A42]" style={{ fontFamily: "'IM Fell English',serif" }}>
+                    {m.sub_category}
+                  </p>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="px-6 py-12 text-center text-sm italic text-[#6B5A42]" style={{ fontFamily: "'IM Fell English',serif" }}>
+              Tidak ada materi ditemukan.
+            </div>
+          )}
         </div>
 
         {/* Pagination */}

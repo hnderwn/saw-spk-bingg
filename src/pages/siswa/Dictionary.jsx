@@ -1,40 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '../../lib/supabase';
+import { localDB } from '../../utils/indexedDB';
 import Button from '../../components/ui/Button';
-
-// Simple IndexedDB Wrapper for Offline Sync
-const DB_NAME = 'LearningDB';
-const STORE_NAME = 'materials';
-
-const openDB = () => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-      }
-    };
-    request.onsuccess = (e) => resolve(e.target.result);
-    request.onerror = (e) => reject(e.target.error);
-  });
-};
-
-const saveToLocal = async (items) => {
-  const database = await openDB();
-  const tx = database.transaction(STORE_NAME, 'readwrite');
-  const store = tx.objectStore(STORE_NAME);
-  items.forEach((item) => store.put(item));
-  return new Promise((resolve) => (tx.oncomplete = () => resolve()));
-};
-
-const getFromLocal = async () => {
-  const database = await openDB();
-  const tx = database.transaction(STORE_NAME, 'readonly');
-  const store = tx.objectStore(STORE_NAME);
-  const request = store.getAll();
-  return new Promise((resolve) => (request.onsuccess = () => resolve(request.result)));
-};
 
 // ── Shield icon ──
 const ShieldIcon = () => (
@@ -203,7 +170,14 @@ const Dictionary = () => {
   useEffect(() => {
     initData();
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    const handleOnline = () => syncWithRemote();
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('online', handleOnline);
+    };
   }, []);
 
   // Debounce search term
@@ -225,7 +199,7 @@ const Dictionary = () => {
   const initData = async () => {
     try {
       setLoading(true);
-      const localData = await getFromLocal();
+      const localData = await localDB.getMaterials();
       if (localData.length > 0) {
         setMaterials(localData);
         setLoading(false);
@@ -248,17 +222,17 @@ const Dictionary = () => {
       if (data && data.length > 0) {
         // Merge with existing local data if it's a delta sync
         if (lastSync) {
-          const currentLocal = await getFromLocal();
+          const currentLocal = await localDB.getMaterials();
           const merged = [...currentLocal];
           data.forEach((newItem) => {
             const idx = merged.findIndex((m) => m.id === newItem.id);
             if (idx > -1) merged[idx] = newItem;
             else merged.push(newItem);
           });
-          await saveToLocal(merged);
+          await localDB.saveMaterials(merged);
           setMaterials(merged);
         } else {
-          await saveToLocal(data);
+          await localDB.saveMaterials(data);
           setMaterials(data);
         }
 
@@ -370,44 +344,38 @@ const Dictionary = () => {
         <div className="max-w-5xl mx-auto px-4 py-5">
           {/* Row 1: Branding + Sync */}
           <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <ShieldIcon />
-              <div>
-                <h1 className="text-white text-xl font-bold leading-none" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+            <div className="flex items-center gap-2 md:gap-3">
+              <ShieldIcon size={24} />
+              <div className="min-w-0">
+                <h1 className="text-white text-base md:text-xl font-bold leading-none truncate" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                   Kamus Scholara
                 </h1>
-                <p className="text-xs italic opacity-75 mt-0.5" style={{ fontFamily: "'IM Fell English', serif", color: '#C9A84C' }}>
-                  "Knowledge is the true gold of the mind."
+                <p className="hidden xs:block text-[10px] md:text-xs italic opacity-75 mt-0.5" style={{ fontFamily: "'IM Fell English', serif", color: '#C9A84C' }}>
+                  "Gold of the mind."
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 md:gap-2">
               <button
                 onClick={() => setLangMode((l) => (l === 'EN' ? 'ID' : l === 'ID' ? 'BOTH' : 'EN'))}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm border text-[10px] font-bold tracking-widest transition-all"
+                className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-sm border text-[9px] md:text-[10px] font-bold tracking-widest transition-all"
                 style={{
                   color: '#C9A84C',
                   borderColor: 'rgba(201,168,76,0.3)',
                   backgroundColor: 'rgba(201,168,76,0.05)',
                 }}
               >
-                <span>🌍</span> {langMode}
+                🌍 {langMode}
               </button>
 
               {syncStatus === 'syncing' && (
                 <div
-                  className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest animate-pulse px-3 py-1.5 rounded-full border"
+                  className="flex items-center gap-1.5 text-[9px] font-bold tracking-widest animate-pulse px-2 py-1 rounded-full border"
                   style={{ color: '#93C5FD', backgroundColor: 'rgba(147,197,253,0.1)', borderColor: 'rgba(147,197,253,0.2)' }}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-300 animate-pulse" />
-                  SYNCING...
-                </div>
-              )}
-              {syncStatus === 'complete' && (
-                <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest px-3 py-1.5 rounded-full border" style={{ color: '#6EE7B7', backgroundColor: 'rgba(110,231,183,0.1)', borderColor: 'rgba(110,231,183,0.2)' }}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  UPDATED
+                  <span className="hidden sm:inline">SYNCING</span>
                 </div>
               )}
             </div>
@@ -617,10 +585,10 @@ const Dictionary = () => {
       </div>
 
       {/* ══ FLOATING BACK BUTTON ══ */}
-      <div className="fixed bottom-8 right-8 z-20">
+      <div className="fixed bottom-24 md:bottom-8 right-6 z-20">
         <button
           onClick={() => window.history.back()}
-          className="w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+          className="w-12 h-12 md:w-14 md:h-14 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
           style={{ background: '#0A2463', color: 'white', border: '2px solid #C9A84C', boxShadow: '0 8px 24px rgba(10,36,99,0.3)' }}
         >
           <span className="text-xl">←</span>

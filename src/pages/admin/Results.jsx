@@ -92,7 +92,8 @@ const ResultsCenter = () => {
           {/* Aksen RedRule Sesuai Permintaan */}
           <RedRule opacity={0.6} />
 
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[#EDE4CC] border-b border-[#C8B99A]">
@@ -150,6 +151,44 @@ const ResultsCenter = () => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-[rgba(200,185,154,0.4)]">
+            {loading ? (
+              <div className="px-6 py-12 text-center text-sm italic text-[#6B5A42]" style={{ fontFamily: "'Cormorant Garamond',serif" }}>
+                Memuat arsip hasil...
+              </div>
+            ) : filteredResults.length > 0 ? (
+              filteredResults.map((r) => (
+                <div key={r.id} className="p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div className="min-w-0">
+                      <div className="font-bold text-lg text-[#0A2463] truncate" style={{ fontFamily: "'Cormorant Garamond',serif" }}>
+                        {r.profiles?.full_name || 'Anonymous'}
+                      </div>
+                      <div className="text-xs text-[#6B5A42] truncate leading-tight">{r.profiles?.school || '—'}</div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-2xl font-black leading-none" style={{ fontFamily: "'Cormorant Garamond',serif", color: r.score_total >= 80 ? '#16A34A' : r.score_total >= 60 ? '#D97706' : '#BF0A30' }}>
+                        {r.score_total}
+                      </span>
+                      <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm bg-[#F2ECD8] border border-[#C8B99A] text-[#0A2463]">{r.exam_type || 'UJIAN'}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[10px] font-mono text-[#6B5A42]">{new Date(r.created_at).toLocaleDateString('id-ID')}</span>
+                    <button onClick={() => setSelectedDetails(r)} className="text-[11px] font-black text-[#1A4FAD] px-3 py-1.5 border border-[#1A4FAD]/20 rounded-sm">
+                      DETAIL
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="px-6 py-12 text-center text-sm italic text-[#6B5A42]" style={{ fontFamily: "'IM Fell English',serif" }}>
+                Hasil tidak ditemukan.
+              </div>
+            )}
           </div>
           {/* Bottom Gold Accent */}
           <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,#C9A84C 25%,#C9A84C 75%,transparent)' }} />

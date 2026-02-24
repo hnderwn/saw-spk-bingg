@@ -18,6 +18,14 @@ export const auth = {
 
   signOut: () => supabase.auth.signOut(),
 
+  signInWithGoogle: () =>
+    supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    }),
+
   getUser: () => supabase.auth.getUser(),
 };
 

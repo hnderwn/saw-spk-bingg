@@ -50,7 +50,8 @@ const AuditLogs = () => {
         {/* Crimson top rule */}
         <div style={{ height: 3, background: 'linear-gradient(90deg,transparent,#BF0A30 25%,#BF0A30 75%,transparent)' }} />
 
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr style={{ background: '#EDE4CC', borderBottom: '1px solid #C8B99A' }}>
@@ -124,6 +125,47 @@ const AuditLogs = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-[rgba(200,185,154,0.4)]">
+          {loading ? (
+            <div className="px-6 py-12 text-center text-sm italic text-[#6B5A42]" style={{ fontFamily: "'Cormorant Garamond',serif" }}>
+              Memuat log...
+            </div>
+          ) : logs.length > 0 ? (
+            logs.map((log) => {
+              const badge = getActionColor(log.action);
+              return (
+                <div key={log.id} className="p-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-sm flex items-center justify-center text-[10px] font-black text-white" style={{ background: '#1A4FAD' }}>
+                        {(log.profiles?.full_name || 'S').charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-sm font-bold text-[#0A2463]" style={{ fontFamily: "'Cormorant Garamond',serif" }}>
+                        {log.profiles?.full_name || 'System'}
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-mono text-[#6B5A42]">{new Date(log.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+
+                  <div>
+                    <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm inline-block mb-1.5" style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}` }}>
+                      {log.action}
+                    </span>
+                    <p className="text-xs text-[#2C1F0E] leading-relaxed">{log.description}</p>
+                  </div>
+
+                  {log.target_id && <div className="text-[9px] text-[#A8946C] font-mono">Target: {log.target_id.substring(0, 8)}...</div>}
+                </div>
+              );
+            })
+          ) : (
+            <div className="px-6 py-12 text-center text-sm italic text-[#6B5A42]" style={{ fontFamily: "'IM Fell English',serif" }}>
+              Belum ada aktivitas.
+            </div>
+          )}
         </div>
 
         {/* Gold bottom rule */}

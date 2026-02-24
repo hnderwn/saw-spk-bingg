@@ -231,34 +231,22 @@ const Questions = () => {
 
       <div className="max-w-7xl mx-auto space-y-6">
         {/* ── Stats per kategori ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {categories.map((category) => {
             const count = questions.filter((q) => q.category === category).length;
             const c = CAT_COLORS[category];
             return (
-              <div
-                key={category}
-                className="rounded-sm p-4 flex items-center justify-between transition-all duration-200"
-                style={{ background: '#FAF6EC', border: '1px solid #C8B99A', borderLeft: `4px solid ${c.color}` }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = '0 4px 14px rgba(10,36,99,0.1)';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = 'none';
-                  e.currentTarget.style.transform = 'none';
-                }}
-              >
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: '#6B5A42' }}>
+              <div key={category} className="rounded-sm p-3 md:p-4 flex items-center justify-between transition-all duration-200" style={{ background: '#FAF6EC', border: '1px solid #C8B99A', borderLeft: `4px solid ${c.color}` }}>
+                <div className="min-w-0">
+                  <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest mb-0.5 md:mb-1 truncate" style={{ color: '#6B5A42' }}>
                     {category}
                   </p>
-                  <p className="text-2xl font-bold leading-none" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
+                  <p className="text-xl md:text-2xl font-bold leading-none" style={{ fontFamily: "'Cormorant Garamond',serif", color: '#0A2463' }}>
                     {count}
                   </p>
                 </div>
-                <div className="w-9 h-9 rounded-sm flex items-center justify-center flex-shrink-0" style={{ background: c.bg, border: `1px solid ${c.border}` }}>
-                  <svg className="w-5 h-5" fill="none" stroke={c.color} viewBox="0 0 24 24">
+                <div className="w-8 h-8 md:w-9 md:h-9 rounded-sm flex items-center justify-center flex-shrink-0" style={{ background: c.bg, border: `1px solid ${c.border}` }}>
+                  <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke={c.color} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
                 </div>
@@ -302,7 +290,7 @@ const Questions = () => {
             </div>
           </div>
 
-          {/* Table body */}
+          {/* Table / Card List body */}
           {loading ? (
             <div className="py-20 text-center">
               <div className="w-8 h-8 rounded-full border-2 mx-auto mb-4 animate-spin" style={{ borderColor: '#C8B99A', borderTopColor: '#1A4FAD' }} />
@@ -311,75 +299,113 @@ const Questions = () => {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr style={{ background: '#EDE4CC', borderBottom: '1px solid #C8B99A' }}>
-                    {['Soal & Topik', 'Level', 'Point', 'Key', ''].map((col, i) => (
-                      <th key={i} className="px-5 py-3 text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42', textAlign: i === 4 ? 'right' : 'left' }}>
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedQuestions.map((q) => {
-                    const c = CAT_COLORS[q.category] || CAT_COLORS.Grammar;
-                    const d = diffStyle(q.difficulty);
-                    return (
-                      <tr key={q.id} style={{ borderBottom: '1px solid rgba(200,185,154,0.35)' }} onMouseEnter={(e) => (e.currentTarget.style.background = '#EDE4CC')} onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
-                        <td className="px-5 py-3.5" style={{ maxWidth: 360 }}>
-                          <p className="text-sm font-semibold truncate" style={{ color: '#2C1F0E' }}>
-                            {q.question_text}
-                          </p>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-sm" style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>
-                              {q.category}
+            <>
+              {/* DESKTOP TABLE */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr style={{ background: '#EDE4CC', borderBottom: '1px solid #C8B99A' }}>
+                      {['Soal & Topik', 'Level', 'Point', 'Key', ''].map((col, i) => (
+                        <th key={i} className="px-5 py-3 text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42', textAlign: i === 4 ? 'right' : 'left' }}>
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedQuestions.map((q) => {
+                      const c = CAT_COLORS[q.category] || CAT_COLORS.Grammar;
+                      const d = diffStyle(q.difficulty);
+                      return (
+                        <tr
+                          key={q.id}
+                          style={{ borderBottom: '1px solid rgba(200,185,154,0.35)' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = '#EDE4CC')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <td className="px-5 py-3.5" style={{ maxWidth: 360 }}>
+                            <p className="text-sm font-semibold truncate" style={{ color: '#2C1F0E' }}>
+                              {q.question_text}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-sm" style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>
+                                {q.category}
+                              </span>
+                              <span className="text-[10px] font-semibold" style={{ color: '#6B5A42' }}>
+                                • {q.sub_category || 'General'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-sm" style={{ background: d.bg, color: d.color, border: `1px solid ${d.border}` }}>
+                              Lvl {q.difficulty || 1}
                             </span>
-                            <span className="text-[10px] font-semibold" style={{ color: '#6B5A42' }}>
-                              • {q.sub_category || 'General'}
+                          </td>
+                          <td className="px-5 py-3.5 text-xs font-mono" style={{ color: '#6B5A42' }}>
+                            W:{q.weight || 1}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <span className="w-6 h-6 flex items-center justify-center rounded-sm text-xs font-black" style={{ background: '#0A2463', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.4)' }}>
+                              {q.correct_answer}
                             </span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-sm" style={{ background: d.bg, color: d.color, border: `1px solid ${d.border}` }}>
-                            Lvl {q.difficulty || 1}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3.5 text-xs font-mono" style={{ color: '#6B5A42' }}>
-                          W:{q.weight || 1}
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <span className="w-6 h-6 flex items-center justify-center rounded-sm text-xs font-black" style={{ background: '#0A2463', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.4)' }}>
-                            {q.correct_answer}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3.5 text-right">
-                          <button
-                            onClick={() => handleEdit(q)}
-                            className="text-xs font-bold mr-4 transition-colors"
-                            style={{ color: '#1A4FAD' }}
-                            onMouseEnter={(e) => (e.currentTarget.style.color = '#0A2463')}
-                            onMouseLeave={(e) => (e.currentTarget.style.color = '#1A4FAD')}
-                          >
+                          </td>
+                          <td className="px-5 py-3.5 text-right">
+                            <button onClick={() => handleEdit(q)} className="text-xs font-bold mr-4 transition-colors" style={{ color: '#1A4FAD' }}>
+                              Edit
+                            </button>
+                            <button onClick={() => handleDelete(q.id)} className="text-xs font-bold transition-colors" style={{ color: '#BF0A30' }}>
+                              Hapus
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* MOBILE CARD LIST */}
+              <div className="md:hidden divide-y divide-[#C8B99A]/40">
+                {paginatedQuestions.map((q) => {
+                  const c = CAT_COLORS[q.category] || CAT_COLORS.Grammar;
+                  const d = diffStyle(q.difficulty);
+                  return (
+                    <div key={q.id} className="p-4 bg-white/50">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-[#0A2463] line-clamp-2 leading-snug">{q.question_text}</p>
+                        </div>
+                        <span className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-sm text-xs font-black" style={{ background: '#0A2463', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.4)' }}>
+                          {q.correct_answer}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center flex-wrap gap-2 mb-4">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-sm" style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>
+                          {q.category}
+                        </span>
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-sm" style={{ background: d.bg, color: d.color, border: `1px solid ${d.border}` }}>
+                          Lvl {q.difficulty || 1}
+                        </span>
+                        <span className="text-[10px] font-mono font-bold text-[#6B5A42]">W:{q.weight || 1}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-dashed border-[#C8B99A]/50">
+                        <span className="text-[10px] font-semibold text-[#6B5A42] truncate">{q.sub_category || 'General Topic'}</span>
+                        <div className="flex items-center gap-4">
+                          <button onClick={() => handleEdit(q)} className="text-xs font-bold text-[#1A4FAD]">
                             Edit
                           </button>
-                          <button
-                            onClick={() => handleDelete(q.id)}
-                            className="text-xs font-bold transition-colors"
-                            style={{ color: '#BF0A30' }}
-                            onMouseEnter={(e) => (e.currentTarget.style.color = '#8B0020')}
-                            onMouseLeave={(e) => (e.currentTarget.style.color = '#BF0A30')}
-                          >
+                          <button onClick={() => handleDelete(q.id)} className="text-xs font-bold text-[#BF0A30]">
                             Hapus
                           </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
 
           {/* Pagination */}

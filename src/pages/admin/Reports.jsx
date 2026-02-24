@@ -191,26 +191,26 @@ const Reports = () => {
       <div className="space-y-8">
         {/* ══ STATS ══ */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mt-6">
             {[
               { label: 'Total Ujian', value: stats.totalExams, icon: '📋', accent: '#1A4FAD' },
-              { label: 'Total Siswa Unik', value: stats.totalStudents, icon: '👥', accent: '#16A34A' },
-              { label: 'Rata-rata Skor', value: stats.averageScore, icon: '🎯', accent: '#D97706', colorClass: getScoreColor(stats.averageScore) },
-              { label: 'Nilai Rata-rata', value: Math.round((stats.averageScore / 100) * 5 * 10) / 10, icon: '⭐', accent: '#7C3AED' },
+              { label: 'Total Siswa', value: stats.totalStudents, icon: '👥', accent: '#16A34A' },
+              { label: 'Skor Rata', value: stats.averageScore, icon: '🎯', accent: '#D97706', colorClass: getScoreColor(stats.averageScore) },
+              { label: 'Rating', value: Math.round((stats.averageScore / 100) * 5 * 10) / 10, icon: '⭐', accent: '#7C3AED' },
             ].map(({ label, value, icon, accent, colorClass }) => (
               <div
                 key={label}
-                className="rounded-sm p-5 flex flex-col gap-3 transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(10,36,99,0.1)] cursor-default"
+                className="rounded-sm p-3 md:p-5 flex flex-col gap-2 md:gap-3 transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(10,36,99,0.1)] cursor-default"
                 style={{ background: '#FAF6EC', border: '1px solid #C8B99A', borderLeft: `4px solid ${accent}` }}
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42' }}>
+                  <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest truncate" style={{ color: '#6B5A42' }}>
                     {label}
                   </p>
-                  <span className="text-lg">{icon}</span>
+                  <span className="text-base md:text-lg">{icon}</span>
                 </div>
-                <p className={`font-bold leading-none ${colorClass || ''}`} style={{ fontFamily: "'Cormorant Garamond',serif", color: colorClass ? undefined : '#0A2463', fontSize: 32 }}>
-                  {value}
+                <p className={`font-bold leading-none ${colorClass || ''}`} style={{ fontFamily: "'Cormorant Garamond',serif", color: colorClass ? undefined : '#0A2463', fontSize: 24 }}>
+                  <span className="md:text-[32px]">{value}</span>
                 </p>
               </div>
             ))}
@@ -272,42 +272,51 @@ const Reports = () => {
             <GoldRule opacity={0.6} />
 
             <div className="mt-5 overflow-hidden rounded-sm" style={{ border: '1px solid #C8B99A' }}>
-              {/* PENAMBAHAN AKSEN MERAH DI SINI */}
               <RedRule opacity={0.6} />
-              <table className="min-w-full divide-y" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
-                <thead style={{ background: '#EDE4CC' }}>
-                  <tr>
-                    <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42' }}>
-                      Topik Materi
-                    </th>
-                    <th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42' }}>
-                      Error Rate
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
-                  {stats && stats.hardestTopics.length > 0 ? (
-                    stats.hardestTopics.map((item, idx) => (
-                      <tr key={idx} className="transition-colors hover:bg-[#EDE4CC]/50">
-                        <td className="px-4 py-3 text-sm font-medium" style={{ color: '#0A2463' }}>
-                          {item.topic}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <span className="px-2 py-1 rounded-sm text-xs font-bold" style={{ background: item.errorRate > 70 ? 'rgba(191,10,48,0.1)' : 'rgba(217,119,6,0.1)', color: item.errorRate > 70 ? '#BF0A30' : '#D97706' }}>
-                            {item.errorRate}% Salah
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
+                  <thead style={{ background: '#EDE4CC' }}>
                     <tr>
-                      <td colSpan="2" className="px-4 py-8 text-center text-sm italic" style={{ fontFamily: "'IM Fell English',serif", color: '#6B5A42' }}>
-                        Belum ada data materi yang tersisa.
-                      </td>
+                      <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42' }}>
+                        Topik Materi
+                      </th>
+                      <th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42' }}>
+                        Error Rate
+                      </th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
+                    {stats &&
+                      stats.hardestTopics.map((item, idx) => (
+                        <tr key={idx} className="transition-colors hover:bg-[#EDE4CC]/50">
+                          <td className="px-4 py-3 text-sm font-medium" style={{ color: '#0A2463' }}>
+                            {item.topic}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span className="px-2 py-1 rounded-sm text-xs font-bold" style={{ background: item.errorRate > 70 ? 'rgba(191,10,48,0.1)' : 'rgba(217,119,6,0.1)', color: item.errorRate > 70 ? '#BF0A30' : '#D97706' }}>
+                              {item.errorRate}% Salah
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile List View */}
+              <div className="md:hidden divide-y divide-[#C8B99A]/40">
+                {stats &&
+                  stats.hardestTopics.map((item, idx) => (
+                    <div key={idx} className="px-4 py-3 flex items-center justify-between">
+                      <span className="text-sm font-bold text-[#0A2463]">{item.topic}</span>
+                      <span className="text-[10px] font-black px-2 py-1 rounded-sm" style={{ background: item.errorRate > 70 ? 'rgba(191,10,48,0.1)' : 'rgba(217,119,6,0.1)', color: item.errorRate > 70 ? '#BF0A30' : '#D97706' }}>
+                        {item.errorRate}% Error
+                      </span>
+                    </div>
+                  ))}
+              </div>
             </div>
             <p className="mt-6 text-[11px] italic" style={{ fontFamily: "'IM Fell English',serif", color: '#6B5A42' }}>
               * Topik dengan tingkat kesalahan tertinggi dari seluruh jawaban siswa.
@@ -418,46 +427,67 @@ const Reports = () => {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
-                  <thead style={{ background: '#EDE4CC' }}>
-                    <tr>
-                      {['Siswa', 'Sekolah', 'Skor Total', 'Tata Bahasa', 'Kosakata', 'Membaca', 'Rumpang', 'Tanggal', 'Aksi'].map((head) => (
-                        <th key={head} className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42' }}>
-                          {head}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
-                    {results.map((result) => (
-                      <tr key={result.id} className="transition-colors hover:bg-[#EDE4CC]/40">
-                        <td className="px-5 py-4 whitespace-nowrap text-sm font-bold" style={{ color: '#0A2463' }}>
-                          {result.profiles?.full_name || 'Anonymous Student'}
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-xs" style={{ color: '#6B5A42' }}>
-                          {result.profiles?.school || 'Unknown School'}
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-bold ${getScoreColor(result.score_total)}`}>{result.score_total}/100</span>
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-xs font-mono text-center">{result.category_scores?.grammar?.score || 0}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-xs font-mono text-center">{result.category_scores?.vocab?.score || 0}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-xs font-mono text-center">{result.category_scores?.reading?.score || 0}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-xs font-mono text-center">{result.category_scores?.cloze?.score || 0}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-[11px] font-mono" style={{ color: '#6B5A42' }}>
-                          {formatDate(result.created_at)}
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-right">
-                          <button onClick={() => setSelectedResult(result)} className="text-xs font-bold transition-colors hover:underline" style={{ color: '#1A4FAD' }}>
-                            Rincian
-                          </button>
-                        </td>
+              <>
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="min-w-full divide-y" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
+                    <thead style={{ background: '#EDE4CC' }}>
+                      <tr>
+                        {['Siswa', 'Sekolah', 'Skor Total', 'Tanggal', ''].map((head) => (
+                          <th key={head} className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5A42' }}>
+                            {head}
+                          </th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y" style={{ borderColor: 'rgba(200,185,154,0.4)' }}>
+                      {results.slice(0, 50).map((result) => (
+                        <tr key={result.id} className="transition-colors hover:bg-[#EDE4CC]/40">
+                          <td className="px-5 py-4 whitespace-nowrap text-sm font-bold" style={{ color: '#0A2463' }}>
+                            {result.profiles?.full_name || 'Anonymous Student'}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-xs" style={{ color: '#6B5A42' }}>
+                            {result.profiles?.school || 'Unknown School'}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <span className={`text-sm font-bold ${getScoreColor(result.score_total)}`}>{result.score_total}/100</span>
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-[11px] font-mono" style={{ color: '#6B5A42' }}>
+                            {formatDate(result.created_at)}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-right">
+                            <button onClick={() => setSelectedResult(result)} className="text-xs font-bold transition-colors hover:underline" style={{ color: '#1A4FAD' }}>
+                              Rincian
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="md:hidden divide-y divide-[#C8B99A]/40">
+                  {results.slice(0, 20).map((result) => (
+                    <div key={result.id} className="p-4 flex items-center justify-between gap-3 bg-white/30">
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[#0A2463] truncate">{result.profiles?.full_name || 'Anonymous'}</p>
+                        <p className="text-[10px] text-[#6B5A42] truncate">
+                          {result.profiles?.school || '-'} • {new Date(result.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className={`text-lg font-black ${getScoreColor(result.score_total)}`} style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                          {result.score_total}
+                        </span>
+                        <button onClick={() => setSelectedResult(result)} className="text-[10px] font-black px-2 py-1 rounded-sm border border-[#C9A84C] text-[#0A2463]">
+                          LIHAT
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>

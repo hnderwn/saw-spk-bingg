@@ -111,7 +111,8 @@ const Users = () => {
           {/* Aksen RedRule */}
           <RedRule opacity={0.6} />
 
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[#EDE4CC] border-b border-[#C8B99A]">
@@ -174,6 +175,54 @@ const Users = () => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-[rgba(200,185,154,0.4)]">
+            {loading ? (
+              <div className="px-6 py-12 text-center text-sm italic text-[#6B5A42]" style={{ fontFamily: "'Cormorant Garamond',serif" }}>
+                Memuat direktori pengguna...
+              </div>
+            ) : filteredUsers.length > 0 ? (
+              filteredUsers.map((user) => (
+                <div key={user.id} className="p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-bold text-lg text-[#0A2463]" style={{ fontFamily: "'Cormorant Garamond',serif" }}>
+                        {user.full_name || 'Anonymous'}
+                      </div>
+                      <div className="text-sm text-[#2C1F0E] font-medium leading-tight">{user.school || '—'}</div>
+                    </div>
+                    <span
+                      className="px-2 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest border"
+                      style={{
+                        backgroundColor: user.role === 'admin' ? '#E0E7FF' : '#D1FAE5',
+                        color: user.role === 'admin' ? '#3730A3' : '#065F46',
+                        borderColor: user.role === 'admin' ? '#C7D2FE' : '#A7F3D0',
+                      }}
+                    >
+                      {user.role || 'siswa'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[10px] font-mono text-[#6B5A42]">{new Date(user.created_at).toLocaleDateString('id-ID')}</span>
+                    {user.role === 'admin' ? (
+                      <button onClick={() => handleRoleChange(user.id, 'siswa')} className="text-[11px] font-black text-[#BF0A30] px-3 py-1.5 border border-[#BF0A30]/20 rounded-sm">
+                        Ubah
+                      </button>
+                    ) : (
+                      <button onClick={() => handleRoleChange(user.id, 'admin')} className="text-[11px] font-black text-[#1A4FAD] px-3 py-1.5 border border-[#1A4FAD]/20 rounded-sm">
+                        Ubah
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="px-6 py-12 text-center text-sm italic text-[#6B5A42]" style={{ fontFamily: "'IM Fell English',serif" }}>
+                Pencarian pengguna tidak ditemukan.
+              </div>
+            )}
           </div>
 
           {/* Bottom Gold Accent */}

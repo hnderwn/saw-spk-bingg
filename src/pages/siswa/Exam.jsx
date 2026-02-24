@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useExam } from '../../context/ExamContext';
 import { db } from '../../lib/supabase';
+import { localDB } from '../../utils/indexedDB';
 // Import UI components dipertahankan
 import QuestionCard from '../../components/Exam/QuestionCard';
 import Timer from '../../components/ui/Timer';
@@ -41,7 +42,20 @@ const Exam = () => {
       const packageId = searchParams.get('paket');
       clearExam();
 
-      const { data, error } = await db.getQuestions();
+      let data, error;
+
+      if (navigator.onLine) {
+        const response = await db.getQuestions();
+        data = response.data;
+        error = response.error;
+        if (data) {
+          await localDB.saveQuestions(data); // Cache for offline
+        }
+      } else {
+        console.log('Exam: Offline mode, loading from local cache');
+        data = await localDB.getQuestions();
+      }
+
       if (error) throw error;
 
       let examQuestions = data || [];
@@ -173,8 +187,14 @@ const Exam = () => {
         answers: examResult.answers,
       };
 
-      const { error } = await db.saveExamResult(dbPayload);
-      if (error) throw error;
+      if (navigator.onLine) {
+        const { error } = await db.saveExamResult(dbPayload);
+        if (error) throw error;
+      } else {
+        console.log('Exam: Offline, queuing result');
+        await localDB.queueResult(dbPayload);
+        alert('Ujian selesai! Karena kamu sedang offline, hasil ujian disimpan di perangkat dan akan otomatis disinkronkan saat terhubung internet.');
+      }
 
       navigate('/siswa/result', { state: { examResult } });
     } catch (error) {
