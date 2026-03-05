@@ -307,7 +307,7 @@ const Login = () => {
                 Scholara
               </div>
               <div className="text-white text-xs italic opacity-80 leading-tight" style={{ fontFamily: "'IM Fell English', serif" }}>
-                Est. 2024
+                Est. 2025
               </div>
             </div>
           </div>
